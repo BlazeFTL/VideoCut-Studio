@@ -140,7 +140,7 @@ fun JoinVideoScreen(
 
             Button(
                 onClick = onOpenCustomPicker,
-                colors = ButtonDefaults.buttonColors(containerColor = PrimaryIndigo),
+                colors = ButtonDefaults.buttonColors(containerColor = MaterialTheme.colorScheme.primary),
                 shape = RoundedCornerShape(20.dp)
             ) {
                 Icon(Icons.Default.Add, contentDescription = null, modifier = Modifier.size(16.dp))
@@ -171,13 +171,13 @@ fun JoinVideoScreen(
                         modifier = Modifier
                             .size(64.dp)
                             .clip(CircleShape)
-                            .background(PrimaryContainerLight),
+                            .background(MaterialTheme.colorScheme.primaryContainer),
                         contentAlignment = Alignment.Center
                     ) {
                         Icon(
                             imageVector = Icons.Default.CallMerge,
                             contentDescription = null,
-                            tint = PrimaryIndigo,
+                            tint = MaterialTheme.colorScheme.primary,
                             modifier = Modifier.size(32.dp)
                         )
                     }
@@ -234,12 +234,12 @@ fun JoinVideoScreen(
                         OutlinedButton(
                             onClick = { isSortDropdownExpanded = true },
                             shape = RoundedCornerShape(16.dp),
-                            border = BorderStroke(1.dp, PrimaryIndigo.copy(alpha = 0.5f)),
+                            border = BorderStroke(1.dp, MaterialTheme.colorScheme.primary.copy(alpha = 0.5f)),
                             contentPadding = androidx.compose.foundation.layout.PaddingValues(horizontal = 10.dp, vertical = 4.dp)
                         ) {
-                            Icon(Icons.Default.Sort, contentDescription = null, tint = PrimaryIndigo, modifier = Modifier.size(14.dp))
+                            Icon(Icons.Default.Sort, contentDescription = null, tint = MaterialTheme.colorScheme.primary, modifier = Modifier.size(14.dp))
                             Spacer(modifier = Modifier.width(4.dp))
-                            Text(sortOption.label, fontSize = 11.sp, color = PrimaryIndigo, fontWeight = FontWeight.Bold)
+                            Text(sortOption.label, fontSize = 11.sp, color = MaterialTheme.colorScheme.primary, fontWeight = FontWeight.Bold)
                         }
 
                         DropdownMenu(
@@ -285,7 +285,7 @@ fun JoinVideoScreen(
                         ),
                         border = BorderStroke(
                             width = if (isDragging) 2.dp else 1.dp,
-                            color = if (isDragging) PrimaryIndigo else SurfaceBorderLight
+                            color = if (isDragging) MaterialTheme.colorScheme.primary else SurfaceBorderLight
                         ),
                         elevation = CardDefaults.cardElevation(
                             defaultElevation = if (isDragging) 8.dp else 1.dp
@@ -336,7 +336,7 @@ fun JoinVideoScreen(
                                 Icon(
                                     imageVector = Icons.Default.DragHandle,
                                     contentDescription = "Drag to reorder",
-                                    tint = if (isDragging) PrimaryIndigo else TextSecondaryMuted,
+                                    tint = if (isDragging) MaterialTheme.colorScheme.primary else TextSecondaryMuted,
                                     modifier = Modifier.size(22.dp)
                                 )
                             }
@@ -348,7 +348,7 @@ fun JoinVideoScreen(
                                 modifier = Modifier
                                     .size(60.dp, 60.dp)
                                     .clip(RoundedCornerShape(8.dp))
-                                    .background(PrimaryContainerLight),
+                                    .background(MaterialTheme.colorScheme.primaryContainer),
                                 contentAlignment = Alignment.Center
                             ) {
                                 if (item.thumbnail != null) {
@@ -362,7 +362,7 @@ fun JoinVideoScreen(
                                     Icon(
                                         imageVector = Icons.Outlined.Movie,
                                         contentDescription = null,
-                                        tint = PrimaryIndigo,
+                                        tint = MaterialTheme.colorScheme.primary,
                                         modifier = Modifier.size(24.dp)
                                     )
                                 }
@@ -386,7 +386,7 @@ fun JoinVideoScreen(
                                 Box(
                                     modifier = Modifier
                                         .align(Alignment.TopStart)
-                                        .background(PrimaryIndigo, RoundedCornerShape(bottomEnd = 6.dp))
+                                        .background(MaterialTheme.colorScheme.primary, RoundedCornerShape(bottomEnd = 6.dp))
                                         .padding(horizontal = 6.dp, vertical = 2.dp)
                                 ) {
                                     Text(
@@ -480,7 +480,7 @@ fun JoinVideoScreen(
                                 Icon(
                                     imageVector = Icons.Default.RotateRight,
                                     contentDescription = "Rotate Video",
-                                    tint = PrimaryIndigo,
+                                    tint = MaterialTheme.colorScheme.primary,
                                     modifier = Modifier.size(20.dp)
                                 )
                             }
@@ -511,7 +511,7 @@ fun JoinVideoScreen(
                 onClick = onProcessJoin,
                 enabled = videoList.size >= 2 && !isProcessing,
                 colors = ButtonDefaults.buttonColors(
-                    containerColor = if (resolutionsMatch) EmeraldSuccess else PrimaryIndigo
+                    containerColor = if (resolutionsMatch) EmeraldSuccess else MaterialTheme.colorScheme.primary
                 ),
                 shape = RoundedCornerShape(14.dp),
                 modifier = Modifier
@@ -668,7 +668,7 @@ fun JoinRotateVideoDialog(
                             modifier = Modifier
                                 .size(40.dp)
                                 .clip(CircleShape)
-                                .background(if (flipHorizontal) PrimaryIndigo else Color.Transparent)
+                                .background(if (flipHorizontal) MaterialTheme.colorScheme.primary else Color.Transparent)
                         ) {
                             Icon(Icons.Default.SwapHoriz, contentDescription = "Flip H", tint = Color.White)
                         }
@@ -679,7 +679,7 @@ fun JoinRotateVideoDialog(
                             modifier = Modifier
                                 .size(40.dp)
                                 .clip(CircleShape)
-                                .background(if (flipVertical) PrimaryIndigo else Color.Transparent)
+                                .background(if (flipVertical) MaterialTheme.colorScheme.primary else Color.Transparent)
                         ) {
                             Icon(Icons.Default.SwapVert, contentDescription = "Flip V", tint = Color.White)
                         }
@@ -704,7 +704,7 @@ fun JoinRotateVideoDialog(
                             onSaveRotation(rotationDegrees, flipHorizontal, flipVertical)
                         },
                         modifier = Modifier.weight(1f),
-                        colors = ButtonDefaults.buttonColors(containerColor = PrimaryIndigo),
+                        colors = ButtonDefaults.buttonColors(containerColor = MaterialTheme.colorScheme.primary),
                         shape = RoundedCornerShape(12.dp)
                     ) {
                         Text("Save & Apply", fontSize = 13.sp, fontWeight = FontWeight.Bold)

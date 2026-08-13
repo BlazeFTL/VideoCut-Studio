@@ -53,6 +53,7 @@ import androidx.compose.material3.DropdownMenu
 import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
+import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Tab
 import androidx.compose.material3.TabRow
@@ -246,7 +247,7 @@ fun CustomMediaPickerScreen(
                         Icon(
                             imageVector = Icons.Default.FolderOpen,
                             contentDescription = "Open Files",
-                            tint = PrimaryIndigo
+                            tint = MaterialTheme.colorScheme.primary
                         )
                     }
 
@@ -262,7 +263,7 @@ fun CustomMediaPickerScreen(
                         Icon(
                             imageVector = if (isGrid) Icons.Default.ViewList else Icons.Default.ViewModule,
                             contentDescription = "Toggle Grid/List",
-                            tint = PrimaryIndigo
+                            tint = MaterialTheme.colorScheme.primary
                         )
                     }
 
@@ -272,7 +273,7 @@ fun CustomMediaPickerScreen(
                             Icon(
                                 imageVector = Icons.Default.Sort,
                                 contentDescription = "Sort",
-                                tint = PrimaryIndigo
+                                tint = MaterialTheme.colorScheme.primary
                             )
                         }
 
@@ -286,7 +287,7 @@ fun CustomMediaPickerScreen(
                                     text = {
                                         Text(
                                             text = st.label,
-                                            color = if (st == sortType) PrimaryIndigo else TextPrimaryDark,
+                                            color = if (st == sortType) MaterialTheme.colorScheme.primary else TextPrimaryDark,
                                             fontSize = 13.sp,
                                             fontWeight = if (st == sortType) FontWeight.Bold else FontWeight.Normal
                                         )
@@ -305,7 +306,7 @@ fun CustomMediaPickerScreen(
                         Icon(
                             imageVector = Icons.Default.Refresh,
                             contentDescription = "Refresh",
-                            tint = PrimaryIndigo
+                            tint = MaterialTheme.colorScheme.primary
                         )
                     }
                 }
@@ -322,7 +323,7 @@ fun CustomMediaPickerScreen(
                     onValueChange = { searchQuery = it },
                     placeholder = { Text("Search video files...", color = TextSecondaryMuted, fontSize = 13.sp) },
                     leadingIcon = {
-                        Icon(Icons.Default.Search, contentDescription = "Search", tint = PrimaryIndigo, modifier = Modifier.size(20.dp))
+                        Icon(Icons.Default.Search, contentDescription = "Search", tint = MaterialTheme.colorScheme.primary, modifier = Modifier.size(20.dp))
                     },
                     trailingIcon = {
                         if (searchQuery.isNotEmpty()) {
@@ -341,11 +342,11 @@ fun CustomMediaPickerScreen(
             TabRow(
                 selectedTabIndex = selectedTabIndex,
                 containerColor = Color.White,
-                contentColor = PrimaryIndigo,
+                contentColor = MaterialTheme.colorScheme.primary,
                 indicator = { tabPositions ->
                     TabRowDefaults.SecondaryIndicator(
                         modifier = Modifier.tabIndicatorOffset(tabPositions[selectedTabIndex]),
-                        color = PrimaryIndigo,
+                        color = MaterialTheme.colorScheme.primary,
                         height = 3.dp
                     )
                 }
@@ -358,7 +359,7 @@ fun CustomMediaPickerScreen(
                             text = "Media (${processedVideos.size})",
                             fontSize = 14.sp,
                             fontWeight = if (selectedTabIndex == 0) FontWeight.Bold else FontWeight.Medium,
-                            color = if (selectedTabIndex == 0) PrimaryIndigo else TextSecondaryMuted
+                            color = if (selectedTabIndex == 0) MaterialTheme.colorScheme.primary else TextSecondaryMuted
                         )
                     }
                 )
@@ -370,7 +371,7 @@ fun CustomMediaPickerScreen(
                             text = "Folders (${folderGroups.size})",
                             fontSize = 14.sp,
                             fontWeight = if (selectedTabIndex == 1) FontWeight.Bold else FontWeight.Medium,
-                            color = if (selectedTabIndex == 1) PrimaryIndigo else TextSecondaryMuted
+                            color = if (selectedTabIndex == 1) MaterialTheme.colorScheme.primary else TextSecondaryMuted
                         )
                     }
                 )
@@ -382,13 +383,13 @@ fun CustomMediaPickerScreen(
             Row(
                 modifier = Modifier
                     .fillMaxWidth()
-                    .background(PrimaryContainerLight)
+                    .background(MaterialTheme.colorScheme.primaryContainer)
                     .padding(horizontal = 16.dp, vertical = 8.dp),
                 verticalAlignment = Alignment.CenterVertically,
                 horizontalArrangement = Arrangement.SpaceBetween
             ) {
                 Row(verticalAlignment = Alignment.CenterVertically) {
-                    Icon(Icons.Default.Folder, contentDescription = null, tint = PrimaryIndigo, modifier = Modifier.size(16.dp))
+                    Icon(Icons.Default.Folder, contentDescription = null, tint = MaterialTheme.colorScheme.primary, modifier = Modifier.size(16.dp))
                     Spacer(modifier = Modifier.width(6.dp))
                     Text(
                         text = "Filtered by Folder: $selectedFolderFilter",
@@ -399,7 +400,7 @@ fun CustomMediaPickerScreen(
                 }
                 Text(
                     text = "Clear Filter ✕",
-                    color = PrimaryIndigo,
+                    color = MaterialTheme.colorScheme.primary,
                     fontSize = 12.sp,
                     fontWeight = FontWeight.Bold,
                     modifier = Modifier.clickable { selectedFolderFilter = null }
@@ -537,7 +538,7 @@ fun CustomMediaPickerScreen(
                         enabled = selectedUris.isNotEmpty(),
                         modifier = Modifier.fillMaxWidth(),
                         colors = ButtonDefaults.buttonColors(
-                            containerColor = PrimaryIndigo,
+                            containerColor = MaterialTheme.colorScheme.primary,
                             disabledContainerColor = Color(0xFFCBD5E1)
                         ),
                         shape = RoundedCornerShape(12.dp)
@@ -622,7 +623,7 @@ private fun VideoThumbnailView(
             Icon(
                 imageVector = Icons.Outlined.Movie,
                 contentDescription = null,
-                tint = PrimaryIndigo,
+                tint = MaterialTheme.colorScheme.primary,
                 modifier = Modifier.size(24.dp)
             )
         }
@@ -663,7 +664,7 @@ private fun FolderGridCardItem(
                         .align(Alignment.TopStart)
                         .padding(6.dp)
                         .clip(CircleShape)
-                        .background(PrimaryIndigo)
+                        .background(MaterialTheme.colorScheme.primary)
                         .padding(4.dp)
                 ) {
                     Icon(
@@ -728,7 +729,7 @@ private fun FolderListRowItem(
                         .align(Alignment.TopStart)
                         .padding(4.dp)
                         .clip(CircleShape)
-                        .background(PrimaryIndigo)
+                        .background(MaterialTheme.colorScheme.primary)
                         .padding(3.dp)
                 ) {
                     Icon(
@@ -764,7 +765,7 @@ private fun FolderListRowItem(
             Icon(
                 imageVector = Icons.AutoMirrored.Filled.ArrowForward,
                 contentDescription = null,
-                tint = PrimaryIndigo,
+                tint = MaterialTheme.colorScheme.primary,
                 modifier = Modifier.size(20.dp)
             )
         }
@@ -788,11 +789,11 @@ private fun VideoListRowItem(
             .fillMaxWidth()
             .clickable(onClick = onClick),
         colors = CardDefaults.cardColors(
-            containerColor = if (isSelected) PrimaryContainerLight else Color.White
+            containerColor = if (isSelected) MaterialTheme.colorScheme.primaryContainer else Color.White
         ),
         border = BorderStroke(
             1.dp,
-            if (isSelected) PrimaryIndigo else SurfaceBorderLight
+            if (isSelected) MaterialTheme.colorScheme.primary else SurfaceBorderLight
         ),
         shape = RoundedCornerShape(12.dp)
     ) {
@@ -884,7 +885,7 @@ private fun VideoListRowItem(
                 Text(
                     text = "Folder: ${item.folderName}",
                     fontSize = 10.sp,
-                    color = PrimaryIndigo,
+                    color = MaterialTheme.colorScheme.primary,
                     fontWeight = FontWeight.Medium
                 )
             }
@@ -960,11 +961,11 @@ private fun VideoGridCardItem(
             .height(130.dp)
             .clickable(onClick = onClick),
         colors = CardDefaults.cardColors(
-            containerColor = if (isSelected) PrimaryContainerLight else Color.White
+            containerColor = if (isSelected) MaterialTheme.colorScheme.primaryContainer else Color.White
         ),
         border = BorderStroke(
             1.dp,
-            if (isSelected) PrimaryIndigo else SurfaceBorderLight
+            if (isSelected) MaterialTheme.colorScheme.primary else SurfaceBorderLight
         ),
         shape = RoundedCornerShape(10.dp)
     ) {
@@ -1024,7 +1025,7 @@ private fun VideoGridCardItem(
                 Icon(
                     imageVector = Icons.Default.CheckCircle,
                     contentDescription = null,
-                    tint = PrimaryIndigo,
+                    tint = MaterialTheme.colorScheme.primary,
                     modifier = Modifier
                         .align(Alignment.TopEnd)
                         .padding(4.dp)

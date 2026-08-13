@@ -80,7 +80,7 @@ fun NavigationDrawerContent(
                     Icon(
                         imageVector = Icons.Outlined.ContentCut,
                         contentDescription = null,
-                        tint = PrimaryIndigo,
+                        tint = MaterialTheme.colorScheme.primary,
                         modifier = Modifier.size(26.dp)
                     )
 
@@ -90,7 +90,7 @@ fun NavigationDrawerContent(
                         text = "VideoCut Studio",
                         fontWeight = FontWeight.Bold,
                         fontSize = 20.sp,
-                        color = TextPrimaryDark
+                        color = MaterialTheme.colorScheme.onSurface
                     )
                 }
 
@@ -98,12 +98,12 @@ fun NavigationDrawerContent(
                     Icon(
                         imageVector = Icons.Default.Close,
                         contentDescription = "Close Menu",
-                        tint = TextSecondaryMuted
+                        tint = MaterialTheme.colorScheme.onSurfaceVariant
                     )
                 }
             }
 
-            HorizontalDivider(color = SurfaceBorderLight, thickness = 1.dp)
+            HorizontalDivider(color = MaterialTheme.colorScheme.outline, thickness = 1.dp)
 
             Spacer(modifier = Modifier.height(16.dp))
 
@@ -111,7 +111,7 @@ fun NavigationDrawerContent(
                 text = "NAVIGATION",
                 fontSize = 11.sp,
                 fontWeight = FontWeight.Bold,
-                color = TextSecondaryMuted,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
                 letterSpacing = 1.sp,
                 modifier = Modifier.padding(horizontal = 8.dp, vertical = 6.dp)
             )
@@ -189,7 +189,7 @@ fun NavigationDrawerContent(
 
             Spacer(modifier = Modifier.height(16.dp))
 
-            HorizontalDivider(color = SurfaceBorderLight, thickness = 1.dp)
+            HorizontalDivider(color = MaterialTheme.colorScheme.outline, thickness = 1.dp)
 
             Spacer(modifier = Modifier.height(16.dp))
 
@@ -197,7 +197,7 @@ fun NavigationDrawerContent(
                 text = "LIBRARY",
                 fontSize = 11.sp,
                 fontWeight = FontWeight.Bold,
-                color = TextSecondaryMuted,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
                 letterSpacing = 1.sp,
                 modifier = Modifier.padding(horizontal = 8.dp, vertical = 6.dp)
             )
@@ -214,7 +214,7 @@ fun NavigationDrawerContent(
 
             Spacer(modifier = Modifier.height(16.dp))
 
-            HorizontalDivider(color = SurfaceBorderLight, thickness = 1.dp)
+            HorizontalDivider(color = MaterialTheme.colorScheme.outline, thickness = 1.dp)
 
             Spacer(modifier = Modifier.height(16.dp))
 
@@ -222,7 +222,7 @@ fun NavigationDrawerContent(
                 text = "PREFERENCES",
                 fontSize = 11.sp,
                 fontWeight = FontWeight.Bold,
-                color = TextSecondaryMuted,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
                 letterSpacing = 1.sp,
                 modifier = Modifier.padding(horizontal = 8.dp, vertical = 6.dp)
             )
@@ -244,7 +244,7 @@ fun NavigationDrawerContent(
                 modifier = Modifier
                     .fillMaxWidth()
                     .clip(RoundedCornerShape(12.dp))
-                    .background(PrimaryIndigo.copy(alpha = 0.08f))
+                    .background(MaterialTheme.colorScheme.primaryContainer.copy(alpha = 0.5f))
                     .padding(12.dp)
             ) {
                 Column {
@@ -252,12 +252,12 @@ fun NavigationDrawerContent(
                         text = "Fast Stream Engine",
                         fontWeight = FontWeight.Bold,
                         fontSize = 13.sp,
-                        color = PrimaryIndigo
+                        color = MaterialTheme.colorScheme.primary
                     )
                     Text(
                         text = "Lossless cutting & hardware compression active",
                         fontSize = 11.sp,
-                        color = TextSecondaryMuted,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
                         modifier = Modifier.padding(top = 2.dp)
                     )
                 }
@@ -273,8 +273,8 @@ private fun DrawerMenuItem(
     isSelected: Boolean,
     onClick: () -> Unit
 ) {
-    val backgroundColor = if (isSelected) PrimaryIndigo else Color.Transparent
-    val contentColor = if (isSelected) Color.White else TextPrimaryDark
+    val backgroundColor = if (isSelected) MaterialTheme.colorScheme.primary else Color.Transparent
+    val contentColor = if (isSelected) Color.White else MaterialTheme.colorScheme.onSurface
 
     Row(
         modifier = Modifier

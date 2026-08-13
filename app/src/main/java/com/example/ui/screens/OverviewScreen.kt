@@ -80,18 +80,18 @@ fun OverviewScreen(
     Column(
         modifier = Modifier
             .fillMaxSize()
-            .background(Color.White)
+            .background(MaterialTheme.colorScheme.background)
             .padding(horizontal = 18.dp, vertical = 8.dp),
         horizontalAlignment = Alignment.CenterHorizontally
     ) {
         Spacer(modifier = Modifier.height(12.dp))
 
-        // Header Section (Accent Color)
+        // Header Section (Theme Primary Accent Color)
         Text(
             text = greeting.first,
             fontSize = 26.sp,
             fontWeight = FontWeight.Bold,
-            color = Color(0xFF5338D5),
+            color = MaterialTheme.colorScheme.primary,
             textAlign = TextAlign.Center
         )
 
@@ -101,34 +101,39 @@ fun OverviewScreen(
             text = greeting.second,
             fontSize = 14.sp,
             fontWeight = FontWeight.Normal,
-            color = Color(0xFF6B6E7B),
+            color = MaterialTheme.colorScheme.onSurfaceVariant,
             textAlign = TextAlign.Center
         )
 
         Spacer(modifier = Modifier.height(20.dp))
 
-        // Centered "Your Arsenal" Header Title (Accent Color)
+        // Centered "Your Arsenal" Header Title (Theme Primary Accent Color)
         Text(
             text = "Your Arsenal",
             fontSize = 18.sp,
             fontWeight = FontWeight.Bold,
-            color = Color(0xFF5338D5),
+            color = MaterialTheme.colorScheme.primary,
             textAlign = TextAlign.Center
         )
 
         Spacer(modifier = Modifier.height(16.dp))
 
-        // 6 Tool Cards Grid Layout (Matches Screenshot 3)
+        val primary = MaterialTheme.colorScheme.primary
+        val primaryContainer = MaterialTheme.colorScheme.primaryContainer
+        val secondary = MaterialTheme.colorScheme.secondary
+        val secondaryContainer = MaterialTheme.colorScheme.secondaryContainer
+
+        // 6 Tool Cards Grid Layout with theme responsive accents
         val buttons = listOf(
             ArsenalButtonItem(
                 title = "Cut Video",
                 description = "Trim single range",
                 icon = Icons.Outlined.ContentCut,
                 badge = "SINGLE",
-                iconBg = Color(0xFFEBE6FF),
-                iconTint = Color(0xFF5338D5),
-                badgeBg = Color(0xFFEBE6FF),
-                badgeText = Color(0xFF5338D5),
+                iconBg = primaryContainer,
+                iconTint = primary,
+                badgeBg = primaryContainer,
+                badgeText = primary,
                 onClick = { onOpenPickerForTool(NavigationTab.SINGLE_CUT) }
             ),
             ArsenalButtonItem(
@@ -136,10 +141,10 @@ fun OverviewScreen(
                 description = "Cut out selected segments",
                 icon = Icons.Default.FolderOpen,
                 badge = "MULTI-CUT",
-                iconBg = Color(0xFFD3F5E4),
-                iconTint = Color(0xFF0C7A5E),
-                badgeBg = Color(0xFFD3F5E4),
-                badgeText = Color(0xFF0C7A5E),
+                iconBg = secondaryContainer,
+                iconTint = secondary,
+                badgeBg = secondaryContainer,
+                badgeText = secondary,
                 onClick = {
                     onSetMultiPartMode?.invoke(MultiPartCutMode.REMOVE_SELECTED)
                     onOpenPickerForTool(NavigationTab.MULTI_CUT)
@@ -150,10 +155,10 @@ fun OverviewScreen(
                 description = "Merge selected segments",
                 icon = Icons.Filled.FolderSpecial,
                 badge = "MULTI-CUT",
-                iconBg = Color(0xFFFEF0C7),
-                iconTint = Color(0xFF9A6800),
-                badgeBg = Color(0xFFFEF0C7),
-                badgeText = Color(0xFF9A6800),
+                iconBg = primaryContainer.copy(alpha = 0.7f),
+                iconTint = primary,
+                badgeBg = primaryContainer.copy(alpha = 0.7f),
+                badgeText = primary,
                 onClick = {
                     onSetMultiPartMode?.invoke(MultiPartCutMode.KEEP_SELECTED)
                     onOpenPickerForTool(NavigationTab.MULTI_CUT)
@@ -164,10 +169,10 @@ fun OverviewScreen(
                 description = "Reduce file size",
                 icon = Icons.Outlined.Compress,
                 badge = "FAST",
-                iconBg = Color(0xFFEBE6FF),
-                iconTint = Color(0xFF5338D5),
-                badgeBg = Color(0xFFEBE6FF),
-                badgeText = Color(0xFF5338D5),
+                iconBg = primaryContainer,
+                iconTint = primary,
+                badgeBg = primaryContainer,
+                badgeText = primary,
                 onClick = { onOpenPickerForTool(NavigationTab.COMPRESSOR) }
             ),
             ArsenalButtonItem(
@@ -175,10 +180,10 @@ fun OverviewScreen(
                 description = "Combine multiple videos",
                 icon = Icons.Default.CallMerge,
                 badge = "MERGER",
-                iconBg = Color(0xFFD3F5E4),
-                iconTint = Color(0xFF0C7A5E),
-                badgeBg = Color(0xFFD3F5E4),
-                badgeText = Color(0xFF0C7A5E),
+                iconBg = secondaryContainer,
+                iconTint = secondary,
+                badgeBg = secondaryContainer,
+                badgeText = secondary,
                 onClick = { onOpenPickerForTool(NavigationTab.JOIN_VIDEO) }
             ),
             ArsenalButtonItem(
@@ -186,10 +191,10 @@ fun OverviewScreen(
                 description = "Rotate, mirror & timeline",
                 icon = Icons.Outlined.RotateRight,
                 badge = "ROTATE",
-                iconBg = Color(0xFFFEF0C7),
-                iconTint = Color(0xFF9A6800),
-                badgeBg = Color(0xFFFEF0C7),
-                badgeText = Color(0xFF9A6800),
+                iconBg = secondaryContainer.copy(alpha = 0.7f),
+                iconTint = secondary,
+                badgeBg = secondaryContainer.copy(alpha = 0.7f),
+                badgeText = secondary,
                 onClick = { onOpenPickerForTool(NavigationTab.ROTATE_VIDEO) }
             )
         )
@@ -227,8 +232,8 @@ private fun ArsenalCard(item: ArsenalButtonItem) {
             .fillMaxWidth()
             .height(148.dp)
             .clickable(onClick = item.onClick),
-        colors = CardDefaults.cardColors(containerColor = Color.White),
-        border = BorderStroke(1.dp, Color(0xFFEAEAF0)),
+        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
+        border = BorderStroke(1.dp, MaterialTheme.colorScheme.outline),
         shape = RoundedCornerShape(20.dp),
         elevation = CardDefaults.cardElevation(defaultElevation = 0.dp)
     ) {
@@ -286,14 +291,14 @@ private fun ArsenalCard(item: ArsenalButtonItem) {
                         text = item.title,
                         fontWeight = FontWeight.Bold,
                         fontSize = 13.sp,
-                        color = Color(0xFF1E1F24),
+                        color = MaterialTheme.colorScheme.onSurface,
                         maxLines = 1
                     )
                     Spacer(modifier = Modifier.height(2.dp))
                     Text(
                         text = item.description,
                         fontSize = 10.sp,
-                        color = Color(0xFF757885),
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
                         maxLines = 2,
                         lineHeight = 12.sp
                     )
@@ -303,13 +308,13 @@ private fun ArsenalCard(item: ArsenalButtonItem) {
                     modifier = Modifier
                         .size(28.dp)
                         .clip(CircleShape)
-                        .background(Color(0xFFF4F4F7)),
+                        .background(MaterialTheme.colorScheme.primaryContainer.copy(alpha = 0.5f)),
                     contentAlignment = Alignment.Center
                 ) {
                     Icon(
                         imageVector = Icons.AutoMirrored.Filled.KeyboardArrowRight,
                         contentDescription = "Navigate",
-                        tint = Color(0xFF555866),
+                        tint = MaterialTheme.colorScheme.primary,
                         modifier = Modifier.size(18.dp)
                     )
                 }

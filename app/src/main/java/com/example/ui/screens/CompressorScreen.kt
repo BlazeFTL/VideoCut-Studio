@@ -163,13 +163,13 @@ fun CompressorScreen(
                     Surface(
                         modifier = Modifier.size(52.dp),
                         shape = RoundedCornerShape(12.dp),
-                        color = PrimaryContainerLight
+                        color = MaterialTheme.colorScheme.primaryContainer
                     ) {
                         Box(contentAlignment = Alignment.Center) {
                             Icon(
                                 imageVector = Icons.Outlined.Movie,
                                 contentDescription = null,
-                                tint = PrimaryIndigo,
+                                tint = MaterialTheme.colorScheme.primary,
                                 modifier = Modifier.size(28.dp)
                             )
                         }
@@ -212,7 +212,7 @@ fun CompressorScreen(
                                 )
                             )
                         },
-                        colors = ButtonDefaults.buttonColors(containerColor = PrimaryIndigo),
+                        colors = ButtonDefaults.buttonColors(containerColor = MaterialTheme.colorScheme.primary),
                         shape = RoundedCornerShape(10.dp)
                     ) {
                         Text("Pick", fontSize = 13.sp)
@@ -258,10 +258,10 @@ fun CompressorScreen(
                                 .padding(vertical = 4.dp)
                                 .clickable { onSetMethod(method) },
                             shape = RoundedCornerShape(12.dp),
-                            color = if (isSelected) PrimaryContainerLight else MaterialTheme.colorScheme.surface,
+                            color = if (isSelected) MaterialTheme.colorScheme.primaryContainer else MaterialTheme.colorScheme.surface,
                             border = BorderStroke(
                                 width = if (isSelected) 1.5.dp else 1.dp,
-                                color = if (isSelected) PrimaryIndigo else SurfaceBorderLight
+                                color = if (isSelected) MaterialTheme.colorScheme.primary else SurfaceBorderLight
                             )
                         ) {
                             Row(
@@ -274,7 +274,7 @@ fun CompressorScreen(
                                     modifier = Modifier
                                         .size(20.dp)
                                         .clip(CircleShape)
-                                        .background(if (isSelected) PrimaryIndigo else Color.Transparent)
+                                        .background(if (isSelected) MaterialTheme.colorScheme.primary else Color.Transparent)
                                         .padding(2.dp),
                                     contentAlignment = Alignment.Center
                                 ) {
@@ -302,14 +302,14 @@ fun CompressorScreen(
                                             color = TextPrimaryDark
                                         )
                                         Surface(
-                                            color = if (isSelected) PrimaryIndigo.copy(alpha = 0.15f) else Color.LightGray.copy(alpha = 0.2f),
+                                            color = if (isSelected) MaterialTheme.colorScheme.primary.copy(alpha = 0.15f) else Color.LightGray.copy(alpha = 0.2f),
                                             shape = RoundedCornerShape(4.dp)
                                         ) {
                                             Text(
                                                 text = method.badge,
                                                 fontSize = 9.sp,
                                                 fontWeight = FontWeight.Bold,
-                                                color = if (isSelected) PrimaryIndigo else TextSecondaryMuted,
+                                                color = if (isSelected) MaterialTheme.colorScheme.primary else TextSecondaryMuted,
                                                 modifier = Modifier.padding(horizontal = 6.dp, vertical = 2.dp)
                                             )
                                         }
@@ -352,7 +352,7 @@ fun CompressorScreen(
                                     Icon(
                                         imageVector = Icons.Default.Tune,
                                         contentDescription = null,
-                                        tint = PrimaryIndigo,
+                                        tint = MaterialTheme.colorScheme.primary,
                                         modifier = Modifier.size(18.dp)
                                     )
                                     Text(
@@ -363,14 +363,14 @@ fun CompressorScreen(
                                     )
                                 }
                                 Surface(
-                                    color = PrimaryIndigo.copy(alpha = 0.1f),
+                                    color = MaterialTheme.colorScheme.primary.copy(alpha = 0.1f),
                                     shape = RoundedCornerShape(8.dp)
                                 ) {
                                     Text(
                                         text = "CRF $crfValue",
                                         fontWeight = FontWeight.Bold,
                                         fontSize = 13.sp,
-                                        color = PrimaryIndigo,
+                                        color = MaterialTheme.colorScheme.primary,
                                         modifier = Modifier.padding(horizontal = 8.dp, vertical = 4.dp)
                                     )
                                 }
@@ -392,8 +392,8 @@ fun CompressorScreen(
                                 valueRange = 18f..36f,
                                 steps = 17,
                                 colors = SliderDefaults.colors(
-                                    thumbColor = PrimaryIndigo,
-                                    activeTrackColor = PrimaryIndigo
+                                    thumbColor = MaterialTheme.colorScheme.primary,
+                                    activeTrackColor = MaterialTheme.colorScheme.primary
                                 )
                             )
 
@@ -419,8 +419,8 @@ fun CompressorScreen(
                                             .weight(1f)
                                             .clickable { onSetEncodingSpeed(speed) },
                                         shape = RoundedCornerShape(8.dp),
-                                        color = if (isSpeedSelected) PrimaryIndigo else PrimaryContainerLight,
-                                        border = BorderStroke(1.dp, if (isSpeedSelected) PrimaryIndigo else SurfaceBorderLight)
+                                        color = if (isSpeedSelected) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.primaryContainer,
+                                        border = BorderStroke(1.dp, if (isSpeedSelected) MaterialTheme.colorScheme.primary else SurfaceBorderLight)
                                     ) {
                                         Box(
                                             modifier = Modifier.padding(vertical = 8.dp),
@@ -460,7 +460,7 @@ fun CompressorScreen(
                                     text = VideoProcessor.formatFileSize(currentTargetBytes),
                                     fontWeight = FontWeight.Bold,
                                     fontSize = 14.sp,
-                                    color = PrimaryIndigo
+                                    color = MaterialTheme.colorScheme.primary
                                 )
                             }
 
@@ -476,8 +476,8 @@ fun CompressorScreen(
                                 onValueChange = { onSetTargetSizeBytes(it.toLong()) },
                                 valueRange = (origBytes * 0.10f)..(origBytes * 0.95f),
                                 colors = SliderDefaults.colors(
-                                    thumbColor = PrimaryIndigo,
-                                    activeTrackColor = PrimaryIndigo
+                                    thumbColor = MaterialTheme.colorScheme.primary,
+                                    activeTrackColor = MaterialTheme.colorScheme.primary
                                 )
                             )
 
@@ -492,9 +492,9 @@ fun CompressorScreen(
                                         onClick = { onSetTargetSizeBytes(calcBytes) },
                                         modifier = Modifier.weight(1f),
                                         shape = RoundedCornerShape(8.dp),
-                                        border = BorderStroke(1.dp, PrimaryIndigo.copy(alpha = 0.5f))
+                                        border = BorderStroke(1.dp, MaterialTheme.colorScheme.primary.copy(alpha = 0.5f))
                                     ) {
-                                        Text(label, fontSize = 11.sp, color = PrimaryIndigo, maxLines = 1)
+                                        Text(label, fontSize = 11.sp, color = MaterialTheme.colorScheme.primary, maxLines = 1)
                                     }
                                 }
                             }
@@ -540,9 +540,9 @@ fun CompressorScreen(
                     // Size Preview Box
                     Surface(
                         modifier = Modifier.fillMaxWidth(),
-                        color = PrimaryContainerLight,
+                        color = MaterialTheme.colorScheme.primaryContainer,
                         shape = RoundedCornerShape(12.dp),
-                        border = BorderStroke(1.dp, PrimaryIndigo.copy(alpha = 0.2f))
+                        border = BorderStroke(1.dp, MaterialTheme.colorScheme.primary.copy(alpha = 0.2f))
                     ) {
                         Row(
                             modifier = Modifier
@@ -561,7 +561,7 @@ fun CompressorScreen(
                                     text = "~${VideoProcessor.formatFileSize(estBytes)}",
                                     fontSize = 16.sp,
                                     fontWeight = FontWeight.Bold,
-                                    color = PrimaryIndigo
+                                    color = MaterialTheme.colorScheme.primary
                                 )
                             }
 
@@ -621,8 +621,8 @@ fun CompressorScreen(
                                 .padding(vertical = 4.dp)
                                 .clickable { onSetResolution(res) },
                             shape = RoundedCornerShape(10.dp),
-                            color = if (isSelected) PrimaryIndigo else MaterialTheme.colorScheme.surface,
-                            border = BorderStroke(1.dp, if (isSelected) PrimaryIndigo else SurfaceBorderLight)
+                            color = if (isSelected) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.surface,
+                            border = BorderStroke(1.dp, if (isSelected) MaterialTheme.colorScheme.primary else SurfaceBorderLight)
                         ) {
                             Row(
                                 modifier = Modifier
@@ -664,7 +664,7 @@ fun CompressorScreen(
                         .fillMaxWidth()
                         .height(54.dp),
                     enabled = selectedVideo != null && !isProcessing,
-                    colors = ButtonDefaults.buttonColors(containerColor = PrimaryIndigo),
+                    colors = ButtonDefaults.buttonColors(containerColor = MaterialTheme.colorScheme.primary),
                     shape = RoundedCornerShape(14.dp)
                 ) {
                     Icon(
@@ -687,19 +687,19 @@ fun CompressorScreen(
                             .fillMaxWidth()
                             .height(48.dp),
                         shape = RoundedCornerShape(12.dp),
-                        border = BorderStroke(1.dp, PrimaryIndigo)
+                        border = BorderStroke(1.dp, MaterialTheme.colorScheme.primary)
                     ) {
                         Icon(
                             imageVector = Icons.Default.PlayArrow,
                             contentDescription = null,
-                            tint = PrimaryIndigo,
+                            tint = MaterialTheme.colorScheme.primary,
                             modifier = Modifier.size(20.dp)
                         )
                         Spacer(modifier = Modifier.width(6.dp))
                         Text(
                             text = "Play Source Video",
                             fontSize = 14.sp,
-                            color = PrimaryIndigo,
+                            color = MaterialTheme.colorScheme.primary,
                             fontWeight = FontWeight.SemiBold
                         )
                     }

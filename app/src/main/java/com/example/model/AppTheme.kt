@@ -5,6 +5,8 @@ import androidx.compose.ui.graphics.Color
 enum class AppTheme(
     val id: String,
     val title: String,
+    val subtitle: String,
+    val badge: String,
     val isMixed: Boolean,
     val primaryColor: Color,
     val secondaryColor: Color,
@@ -16,6 +18,8 @@ enum class AppTheme(
     MODERN_INDIGO(
         id = "indigo_static",
         title = "Modern Indigo",
+        subtitle = "Classic & Professional Studio Indigo",
+        badge = "DEFAULT",
         isMixed = false,
         primaryColor = Color(0xFF6366F1),
         secondaryColor = Color(0xFF8B5CF6),
@@ -26,6 +30,8 @@ enum class AppTheme(
     EMERALD_GREEN(
         id = "emerald_static",
         title = "Emerald Green",
+        subtitle = "Fresh & Vibrant Nature Emerald",
+        badge = "POPULAR",
         isMixed = false,
         primaryColor = Color(0xFF10B981),
         secondaryColor = Color(0xFF059669),
@@ -36,6 +42,8 @@ enum class AppTheme(
     SUNSET_ORANGE(
         id = "orange_static",
         title = "Sunset Orange",
+        subtitle = "Warm & Energetic Amber Glow",
+        badge = "WARM",
         isMixed = false,
         primaryColor = Color(0xFFF97316),
         secondaryColor = Color(0xFFEA580C),
@@ -46,6 +54,8 @@ enum class AppTheme(
     ROYAL_PURPLE(
         id = "purple_static",
         title = "Royal Purple",
+        subtitle = "Deep & Luxurious Violet",
+        badge = "ELEGANT",
         isMixed = false,
         primaryColor = Color(0xFF8B5CF6),
         secondaryColor = Color(0xFF7C3AED),
@@ -56,6 +66,8 @@ enum class AppTheme(
     OCEAN_CYAN(
         id = "cyan_static",
         title = "Ocean Cyan",
+        subtitle = "Crisp & Modern Sky Teal",
+        badge = "FRESH",
         isMixed = false,
         primaryColor = Color(0xFF06B6D4),
         secondaryColor = Color(0xFF0284C7),
@@ -66,6 +78,8 @@ enum class AppTheme(
     CRIMSON_ROSE(
         id = "rose_static",
         title = "Crimson Rose",
+        subtitle = "Bold & Punchy Crimson Accent",
+        badge = "BOLD",
         isMixed = false,
         primaryColor = Color(0xFFF43F5E),
         secondaryColor = Color(0xFFE11D48),
@@ -78,6 +92,8 @@ enum class AppTheme(
     INDIGO_ROSE(
         id = "indigo_rose_mixed",
         title = "Indigo & Rose",
+        subtitle = "Studio Indigo with striking Rose highlights",
+        badge = "DUAL",
         isMixed = true,
         primaryColor = Color(0xFF6366F1),
         secondaryColor = Color(0xFFF43F5E),
@@ -88,6 +104,8 @@ enum class AppTheme(
     CYAN_AMBER(
         id = "cyan_amber_mixed",
         title = "Cyan & Amber",
+        subtitle = "Cool Cyan paired with warm Sun Amber",
+        badge = "DUAL",
         isMixed = true,
         primaryColor = Color(0xFF06B6D4),
         secondaryColor = Color(0xFFF59E0B),
@@ -98,6 +116,8 @@ enum class AppTheme(
     EMERALD_PURPLE(
         id = "emerald_purple_mixed",
         title = "Emerald & Purple",
+        subtitle = "Emerald base with Royal Purple trims",
+        badge = "DUAL",
         isMixed = true,
         primaryColor = Color(0xFF10B981),
         secondaryColor = Color(0xFF8B5CF6),
@@ -108,6 +128,8 @@ enum class AppTheme(
     VIOLET_GOLD(
         id = "violet_gold_mixed",
         title = "Violet & Gold",
+        subtitle = "Deep Violet paired with Radiant Gold",
+        badge = "DUAL",
         isMixed = true,
         primaryColor = Color(0xFF8B5CF6),
         secondaryColor = Color(0xFFEAB308),
@@ -118,6 +140,8 @@ enum class AppTheme(
     OCEAN_CORAL(
         id = "ocean_coral_mixed",
         title = "Ocean & Coral",
+        subtitle = "Deep Ocean Blue with Coral accents",
+        badge = "DUAL",
         isMixed = true,
         primaryColor = Color(0xFF2563EB),
         secondaryColor = Color(0xFFFF6B6B),
@@ -128,6 +152,8 @@ enum class AppTheme(
     TEAL_MAGENTA(
         id = "teal_magenta_mixed",
         title = "Teal & Magenta",
+        subtitle = "Vibrant Teal with Electric Magenta punch",
+        badge = "DUAL",
         isMixed = true,
         primaryColor = Color(0xFF14B8A6),
         secondaryColor = Color(0xFFEC4899),

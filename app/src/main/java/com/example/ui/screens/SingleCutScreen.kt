@@ -200,7 +200,7 @@ fun SingleCutScreen(
             Button(
                 onClick = onProcessCut,
                 enabled = !isProcessing && selectedVideo != null,
-                colors = ButtonDefaults.buttonColors(containerColor = PrimaryIndigo),
+                colors = ButtonDefaults.buttonColors(containerColor = MaterialTheme.colorScheme.primary),
                 shape = RoundedCornerShape(20.dp),
                 contentPadding = androidx.compose.foundation.layout.PaddingValues(horizontal = 16.dp, vertical = 6.dp)
             ) {
@@ -254,7 +254,7 @@ fun SingleCutScreen(
                                     )
                                 }
                             },
-                            colors = ButtonDefaults.buttonColors(containerColor = PrimaryIndigo),
+                            colors = ButtonDefaults.buttonColors(containerColor = MaterialTheme.colorScheme.primary),
                             shape = RoundedCornerShape(10.dp)
                         ) {
                             Icon(Icons.Default.Add, contentDescription = null)
@@ -283,7 +283,7 @@ fun SingleCutScreen(
                         // Left Start Time Stepper (- 00:00:36.000 +)
                         Row(verticalAlignment = Alignment.CenterVertically) {
                             Surface(
-                                color = Color(0xFFEEF2FF),
+                                color = MaterialTheme.colorScheme.primaryContainer,
                                 shape = RoundedCornerShape(4.dp),
                                 modifier = Modifier
                                     .size(24.dp)
@@ -293,7 +293,7 @@ fun SingleCutScreen(
                                     }
                             ) {
                                 Box(contentAlignment = Alignment.Center) {
-                                    Text("-", color = PrimaryIndigo, fontWeight = FontWeight.Bold)
+                                    Text("-", color = MaterialTheme.colorScheme.primary, fontWeight = FontWeight.Bold)
                                 }
                             }
                             Spacer(modifier = Modifier.width(4.dp))
@@ -306,7 +306,7 @@ fun SingleCutScreen(
                             )
                             Spacer(modifier = Modifier.width(4.dp))
                             Surface(
-                                color = Color(0xFFEEF2FF),
+                                color = MaterialTheme.colorScheme.primaryContainer,
                                 shape = RoundedCornerShape(4.dp),
                                 modifier = Modifier
                                     .size(24.dp)
@@ -316,14 +316,14 @@ fun SingleCutScreen(
                                     }
                             ) {
                                 Box(contentAlignment = Alignment.Center) {
-                                    Text("+", color = PrimaryIndigo, fontWeight = FontWeight.Bold)
+                                    Text("+", color = MaterialTheme.colorScheme.primary, fontWeight = FontWeight.Bold)
                                 }
                             }
                         }
 
                         // Center Cut Duration Badge
                         Row(verticalAlignment = Alignment.CenterVertically) {
-                            Icon(Icons.Default.ContentCut, contentDescription = null, tint = PrimaryIndigo, modifier = Modifier.size(14.dp))
+                            Icon(Icons.Default.ContentCut, contentDescription = null, tint = MaterialTheme.colorScheme.primary, modifier = Modifier.size(14.dp))
                             Spacer(modifier = Modifier.width(4.dp))
                             Text(
                                 text = VideoProcessor.formatDurationPrecise(cutDurationMs),
@@ -336,7 +336,7 @@ fun SingleCutScreen(
                         // Right End Time Stepper (- 00:03:29.000 +)
                         Row(verticalAlignment = Alignment.CenterVertically) {
                             Surface(
-                                color = Color(0xFFEEF2FF),
+                                color = MaterialTheme.colorScheme.primaryContainer,
                                 shape = RoundedCornerShape(4.dp),
                                 modifier = Modifier
                                     .size(24.dp)
@@ -346,7 +346,7 @@ fun SingleCutScreen(
                                     }
                             ) {
                                 Box(contentAlignment = Alignment.Center) {
-                                    Text("-", color = PrimaryIndigo, fontWeight = FontWeight.Bold)
+                                    Text("-", color = MaterialTheme.colorScheme.primary, fontWeight = FontWeight.Bold)
                                 }
                             }
                             Spacer(modifier = Modifier.width(4.dp))
@@ -359,7 +359,7 @@ fun SingleCutScreen(
                             )
                             Spacer(modifier = Modifier.width(4.dp))
                             Surface(
-                                color = Color(0xFFEEF2FF),
+                                color = MaterialTheme.colorScheme.primaryContainer,
                                 shape = RoundedCornerShape(4.dp),
                                 modifier = Modifier
                                     .size(24.dp)
@@ -369,7 +369,7 @@ fun SingleCutScreen(
                                     }
                             ) {
                                 Box(contentAlignment = Alignment.Center) {
-                                    Text("+", color = PrimaryIndigo, fontWeight = FontWeight.Bold)
+                                    Text("+", color = MaterialTheme.colorScheme.primary, fontWeight = FontWeight.Bold)
                                 }
                             }
                         }
@@ -424,7 +424,7 @@ fun SingleCutScreen(
                                 modifier = Modifier
                                     .fillMaxHeight()
                                     .weight((endRatio - startRatio).coerceAtLeast(0.01f))
-                                    .border(2.dp, PrimaryIndigo)
+                                    .border(2.dp, MaterialTheme.colorScheme.primary)
                             ) {
                                 // Left Primary Handle
                                 Box(
@@ -432,7 +432,7 @@ fun SingleCutScreen(
                                         .align(Alignment.CenterStart)
                                         .fillMaxHeight()
                                         .width(18.dp)
-                                        .background(PrimaryIndigo),
+                                        .background(MaterialTheme.colorScheme.primary),
                                     contentAlignment = Alignment.Center
                                 ) {
                                     Icon(
@@ -449,7 +449,7 @@ fun SingleCutScreen(
                                         .align(Alignment.CenterEnd)
                                         .fillMaxHeight()
                                         .width(18.dp)
-                                        .background(PrimaryIndigo),
+                                        .background(MaterialTheme.colorScheme.primary),
                                     contentAlignment = Alignment.Center
                                 ) {
                                     Icon(
@@ -482,7 +482,7 @@ fun SingleCutScreen(
                             },
                             valueRange = 0f..maxDurationFloat,
                             colors = SliderDefaults.colors(
-                                thumbColor = PrimaryIndigo,
+                                thumbColor = MaterialTheme.colorScheme.primary,
                                 activeTrackColor = Color.Transparent,
                                 inactiveTrackColor = Color.Transparent
                             ),
@@ -504,13 +504,13 @@ fun SingleCutScreen(
                         text = statusMessage,
                         fontSize = 13.sp,
                         fontWeight = FontWeight.Bold,
-                        color = PrimaryIndigo
+                        color = MaterialTheme.colorScheme.primary
                     )
                     Text(
                         text = "${(processingProgress * 100).toInt()}%",
                         fontSize = 13.sp,
                         fontWeight = FontWeight.Bold,
-                        color = PrimaryIndigo
+                        color = MaterialTheme.colorScheme.primary
                     )
                 }
                 LinearProgressIndicator(
@@ -519,8 +519,8 @@ fun SingleCutScreen(
                         .fillMaxWidth()
                         .height(8.dp)
                         .clip(RoundedCornerShape(4.dp)),
-                    color = PrimaryIndigo,
-                    trackColor = PrimaryContainerLight
+                    color = MaterialTheme.colorScheme.primary,
+                    trackColor = MaterialTheme.colorScheme.primaryContainer
                 )
             }
         }
@@ -582,7 +582,7 @@ private fun TimeStepperBox(
                 modifier = Modifier
                     .width(32.dp)
                     .fillMaxHeight()
-                    .background(PrimaryIndigo)
+                    .background(MaterialTheme.colorScheme.primary)
                     .clickable(onClick = onMinus),
                 contentAlignment = Alignment.Center
             ) {
@@ -608,7 +608,7 @@ private fun TimeStepperBox(
                 modifier = Modifier
                     .width(32.dp)
                     .fillMaxHeight()
-                    .background(PrimaryIndigo)
+                    .background(MaterialTheme.colorScheme.primary)
                     .clickable(onClick = onPlus),
                 contentAlignment = Alignment.Center
             ) {
@@ -675,7 +675,7 @@ private fun PreciseTimePickerDialog(
                     val computedMs = ((m * 60 + s) * 1000 + ms).coerceIn(0L, maxMs)
                     onConfirm(computedMs)
                 },
-                colors = ButtonDefaults.buttonColors(containerColor = PrimaryIndigo)
+                colors = ButtonDefaults.buttonColors(containerColor = MaterialTheme.colorScheme.primary)
             ) {
                 Text("Set Time")
             }

@@ -18,13 +18,15 @@ import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.Delete
+import androidx.compose.material.icons.filled.DeleteOutline
 import androidx.compose.material.icons.filled.PlayArrow
 import androidx.compose.material.icons.outlined.Compress
 import androidx.compose.material.icons.outlined.ContentCut
 import androidx.compose.material.icons.outlined.FolderSpecial
 import androidx.compose.material.icons.outlined.VideoLibrary
+import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
@@ -96,7 +98,7 @@ fun HistoryScreen(
         item {
             Card(
                 modifier = Modifier.fillMaxWidth(),
-                colors = CardDefaults.cardColors(containerColor = PrimaryIndigo),
+                colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.primary),
                 shape = RoundedCornerShape(16.dp)
             ) {
                 Row(
@@ -231,23 +233,23 @@ private fun HistoryItemCard(
                 verticalAlignment = Alignment.CenterVertically
             ) {
                 // Operation Badge Tag
-                val (badgeBg, badgeText, badgeColor, icon) = when (item.operationType) {
-                    "SINGLE_CUT" -> Quadruple(PrimaryContainerLight, "SINGLE CUT", PrimaryIndigo, Icons.Outlined.ContentCut)
-                    "MULTI_CUT" -> Quadruple(SecondaryContainerLight, "MULTI-PART CUT", SecondaryViolet, Icons.Outlined.FolderSpecial)
-                    else -> Quadruple(CyanContainer, "COMPRESSED", PrimaryIndigo, Icons.Outlined.Compress)
+                val badge = when (item.operationType) {
+                    "SINGLE_CUT" -> HistoryBadge(MaterialTheme.colorScheme.primaryContainer, "SINGLE CUT", MaterialTheme.colorScheme.primary, Icons.Outlined.ContentCut)
+                    "MULTI_CUT" -> HistoryBadge(SecondaryContainerLight, "MULTI-PART CUT", SecondaryViolet, Icons.Outlined.FolderSpecial)
+                    else -> HistoryBadge(CyanContainer, "COMPRESSED", MaterialTheme.colorScheme.primary, Icons.Outlined.Compress)
                 }
 
                 Surface(
-                    color = badgeBg,
+                    color = badge.bg,
                     shape = RoundedCornerShape(20.dp)
                 ) {
                     Row(
                         modifier = Modifier.padding(horizontal = 10.dp, vertical = 4.dp),
                         verticalAlignment = Alignment.CenterVertically
                     ) {
-                        Icon(imageVector = icon, contentDescription = null, tint = badgeColor, modifier = Modifier.size(12.dp))
+                        Icon(imageVector = badge.icon, contentDescription = null, tint = badge.color, modifier = Modifier.size(12.dp))
                         Spacer(modifier = Modifier.width(4.dp))
-                        Text(text = badgeText, fontSize = 10.sp, fontWeight = FontWeight.ExtraBold, color = badgeColor)
+                        Text(text = badge.text, fontSize = 10.sp, fontWeight = FontWeight.ExtraBold, color = badge.color)
                     }
                 }
 
@@ -294,28 +296,33 @@ private fun HistoryItemCard(
                 }
 
                 Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                    OutlinedButton(
+                    Button(
                         onClick = onPlay,
-                        shape = RoundedCornerShape(8.dp),
-                        border = BorderStroke(1.dp, PrimaryIndigo)
+                        shape = RoundedCornerShape(10.dp),
+                        colors = ButtonDefaults.buttonColors(
+                            containerColor = MaterialTheme.colorScheme.primary,
+                            contentColor = MaterialTheme.colorScheme.onPrimary
+                        ),
+                        contentPadding = PaddingValues(horizontal = 14.dp, vertical = 8.dp)
                     ) {
-                        Icon(Icons.Default.PlayArrow, contentDescription = null, tint = PrimaryIndigo, modifier = Modifier.size(16.dp))
+                        Icon(Icons.Default.PlayArrow, contentDescription = null, modifier = Modifier.size(16.dp))
                         Spacer(modifier = Modifier.width(4.dp))
-                        Text("Play", color = PrimaryIndigo, fontSize = 12.sp, fontWeight = FontWeight.Bold)
+                        Text("Play", fontSize = 12.sp, fontWeight = FontWeight.Bold)
                     }
 
                     OutlinedButton(
                         onClick = onDelete,
-                        shape = RoundedCornerShape(8.dp),
-                        border = BorderStroke(1.dp, RoseError.copy(alpha = 0.5f)),
+                        shape = RoundedCornerShape(10.dp),
+                        border = BorderStroke(1.dp, MaterialTheme.colorScheme.error.copy(alpha = 0.6f)),
                         colors = ButtonDefaults.outlinedButtonColors(
-                            containerColor = RoseError.copy(alpha = 0.06f),
-                            contentColor = RoseError
-                        )
+                            containerColor = MaterialTheme.colorScheme.errorContainer.copy(alpha = 0.25f),
+                            contentColor = MaterialTheme.colorScheme.error
+                        ),
+                        contentPadding = PaddingValues(horizontal = 14.dp, vertical = 8.dp)
                     ) {
-                        Icon(Icons.Default.Delete, contentDescription = null, tint = RoseError, modifier = Modifier.size(16.dp))
+                        Icon(Icons.Default.DeleteOutline, contentDescription = "Delete", modifier = Modifier.size(16.dp))
                         Spacer(modifier = Modifier.width(4.dp))
-                        Text("Delete", color = RoseError, fontSize = 12.sp, fontWeight = FontWeight.Bold)
+                        Text("Delete", fontSize = 12.sp, fontWeight = FontWeight.Bold)
                     }
                 }
             }
@@ -323,4 +330,9 @@ private fun HistoryItemCard(
     }
 }
 
-private data class Quadruple<A, B, C, D>(val first: A, val second: B, val third: C, val fourth: D)
+private data class HistoryBadge(
+    val bg: Color,
+    val text: String,
+    val color: Color,
+    val icon: androidx.compose.ui.graphics.vector.ImageVector
+)
