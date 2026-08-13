@@ -9,6 +9,8 @@ import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.statusBarsPadding
 import androidx.compose.foundation.layout.width
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.ArrowBack
+import androidx.compose.material.icons.filled.Home
 import androidx.compose.material.icons.outlined.Settings
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
@@ -24,6 +26,7 @@ import androidx.compose.ui.graphics.StrokeCap
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import com.example.ui.NavigationTab
 import com.example.ui.theme.TextPrimaryDark
 
 @Composable
@@ -68,10 +71,15 @@ fun StaggeredMenuIcon(
 
 @Composable
 fun TopDashboardBar(
+    activeTab: NavigationTab = NavigationTab.OVERVIEW,
     onOpenDrawer: () -> Unit,
     onOpenSettings: (() -> Unit)? = null,
+    onNavigateBack: () -> Unit = {},
+    onGoHome: () -> Unit = {},
     modifier: Modifier = Modifier
 ) {
+    val isSettings = activeTab == NavigationTab.SETTINGS
+
     Surface(
         modifier = modifier
             .fillMaxWidth()
@@ -85,17 +93,28 @@ fun TopDashboardBar(
                 .padding(horizontal = 14.dp, vertical = 10.dp),
             verticalAlignment = Alignment.CenterVertically
         ) {
-            IconButton(onClick = onOpenDrawer) {
-                StaggeredMenuIcon(
-                    tint = MaterialTheme.colorScheme.onSurface,
-                    modifier = Modifier.size(20.dp)
-                )
+            if (isSettings) {
+                IconButton(onClick = onNavigateBack) {
+                    Icon(
+                        imageVector = Icons.Default.ArrowBack,
+                        contentDescription = "Back",
+                        tint = MaterialTheme.colorScheme.onSurface,
+                        modifier = Modifier.size(24.dp)
+                    )
+                }
+            } else {
+                IconButton(onClick = onOpenDrawer) {
+                    StaggeredMenuIcon(
+                        tint = MaterialTheme.colorScheme.onSurface,
+                        modifier = Modifier.size(20.dp)
+                    )
+                }
             }
 
             Spacer(modifier = Modifier.width(4.dp))
 
             Text(
-                text = "VideoCut Studio",
+                text = if (isSettings) "App Settings" else "VideoCut Studio",
                 fontWeight = FontWeight.Bold,
                 fontSize = 19.sp,
                 color = MaterialTheme.colorScheme.onSurface
@@ -103,7 +122,16 @@ fun TopDashboardBar(
 
             Spacer(modifier = Modifier.weight(1f))
 
-            if (onOpenSettings != null) {
+            if (isSettings) {
+                IconButton(onClick = onGoHome) {
+                    Icon(
+                        imageVector = Icons.Default.Home,
+                        contentDescription = "Home",
+                        tint = MaterialTheme.colorScheme.primary,
+                        modifier = Modifier.size(24.dp)
+                    )
+                }
+            } else if (onOpenSettings != null) {
                 IconButton(onClick = onOpenSettings) {
                     Icon(
                         imageVector = Icons.Outlined.Settings,

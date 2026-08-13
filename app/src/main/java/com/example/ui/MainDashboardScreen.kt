@@ -150,11 +150,18 @@ fun MainDashboardScreen(
         Scaffold(
             topBar = {
                 TopDashboardBar(
+                    activeTab = activeTab,
                     onOpenDrawer = {
                         scope.launch { drawerState.open() }
                     },
                     onOpenSettings = {
                         viewModel.selectTab(NavigationTab.SETTINGS)
+                    },
+                    onNavigateBack = {
+                        viewModel.selectTab(NavigationTab.OVERVIEW)
+                    },
+                    onGoHome = {
+                        viewModel.selectTab(NavigationTab.OVERVIEW)
                     }
                 )
             },

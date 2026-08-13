@@ -718,6 +718,9 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
                 val totalDuration = videos.sumOf { it.durationMs }
                 VideoProcessor.notifyMediaScanner(getApplication(), outputFile)
 
+                val outMeta = try { VideoProcessor.getVideoMetadata(getApplication(), Uri.fromFile(outputFile)) } catch (_: Exception) { null }
+                val resolvedRes = if (outMeta != null && outMeta.width > 0) "${outMeta.width}x${outMeta.height}" else "${firstW}x${firstH}"
+
                 dao.insertProcessedVideo(
                     ProcessedVideoEntity(
                         title = outputFileName,
@@ -726,7 +729,7 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
                         originalSizeBytes = totalOrigSize,
                         outputSizeBytes = outputSize,
                         durationMs = totalDuration,
-                        resolution = if (isFastMerge) "${firstW}x${firstH}" else "1280x720",
+                        resolution = resolvedRes,
                         details = "Joined ${videos.size} videos in ${elapsedSecStr}s (${if (isFastMerge) "Fast Merge" else "Re-encode"})"
                     )
                 )

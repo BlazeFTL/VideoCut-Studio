@@ -1186,50 +1186,52 @@ object VideoProcessor {
 
             // Re-encode join (handles different resolutions, codecs, frame rates)
             onProgress(0.1f)
-            val targetW = 1280
-            val targetH = 720
+
+            // Determine target dimensions based on input orientations
+            val isPortrait = videoItems.count { it.height > it.width } >= (videoItems.size / 2.0)
+            val maxInputW = videoItems.maxOfOrNull { it.width } ?: (if (isPortrait) 720 else 1280)
+            val maxInputH = videoItems.maxOfOrNull { it.height } ?: (if (isPortrait) 1280 else 720)
+
+            val targetW = if (isPortrait) {
+                (maxInputW.coerceIn(360, 1080) / 2) * 2
+            } else {
+                (maxInputW.coerceIn(640, 1920) / 2) * 2
+            }
+            val targetH = if (isPortrait) {
+                (maxInputH.coerceIn(640, 1920) / 2) * 2
+            } else {
+                (maxInputH.coerceIn(360, 1080) / 2) * 2
+            }
 
             val inputsBuilder = StringBuilder()
             val filterBuilder = StringBuilder()
 
             for ((i, file) in resolvedFiles.withIndex()) {
                 inputsBuilder.append("-i \"${file.absolutePath}\" ")
-                filterBuilder.append("[$i:v]scale=$targetW:$targetH:force_original_aspect_ratio=decrease,pad=$targetW:$targetH:(1280-iw)/2:(720-ih)/2:black,setsar=1,format=yuv420p[v$i]; ")
+                filterBuilder.append("[$i:v]scale=w=$targetW:h=$targetH:force_original_aspect_ratio=decrease:force_divisible_by=2,pad=$targetW:$targetH:(ow-iw)/2:(oh-ih)/2:black,setsar=1,format=yuv420p[v$i]; ")
+                if (audioFlags[i]) {
+                    filterBuilder.append("[$i:a]aformat=sample_fmts=fltp:sample_rates=44100:channel_layouts=stereo,aresample=async=1[a$i]; ")
+                } else {
+                    val durSec = String.format(java.util.Locale.US, "%.3f", (videoItems[i].durationMs.coerceAtLeast(500L)) / 1000.0)
+                    filterBuilder.append("aevalsrc=0:d=$durSec:s=44100:c=stereo[a$i]; ")
+                }
             }
 
-            val mapString: String
-            if (hasAudioInAll) {
-                for (i in resolvedFiles.indices) {
-                    filterBuilder.append("[v$i][$i:a]")
-                }
-                filterBuilder.append("concat=n=${resolvedFiles.size}:v=1:a=1[outv][outa]")
-                mapString = "-map \"[outv]\" -map \"[outa]\""
-            } else {
-                for (i in resolvedFiles.indices) {
-                    filterBuilder.append("[v$i]")
-                }
-                filterBuilder.append("concat=n=${resolvedFiles.size}:v=1:a=0[outv]")
-                mapString = "-map \"[outv]\""
+            for (i in resolvedFiles.indices) {
+                filterBuilder.append("[v$i][a$i]")
             }
+            filterBuilder.append("concat=n=${resolvedFiles.size}:v=1:a=1[outv][outa]")
+            val mapString = "-map \"[outv]\" -map \"[outa]\""
 
             val filterComplexStr = filterBuilder.toString()
             val inStr = inputsBuilder.toString().trim()
 
-            val candidateEncoders = if (hasAudioInAll) {
-                listOf(
-                    "-c:v h264_mediacodec -b:v 4M -c:a aac -b:a 128k",
-                    "-c:v libx264 -preset ultrafast -crf 23 -c:a aac -b:a 128k",
-                    "-c:v mpeg4 -b:v 4M -c:a aac -b:a 128k",
-                    "-c:v h264 -c:a aac"
-                )
-            } else {
-                listOf(
-                    "-c:v h264_mediacodec -b:v 4M",
-                    "-c:v libx264 -preset ultrafast -crf 23",
-                    "-c:v mpeg4 -b:v 4M",
-                    "-c:v h264"
-                )
-            }
+            val candidateEncoders = listOf(
+                "-c:v libx264 -preset ultrafast -crf 23 -c:a aac -b:a 128k -pix_fmt yuv420p -movflags +faststart",
+                "-c:v h264_mediacodec -b:v 4M -c:a aac -b:a 128k -pix_fmt yuv420p -movflags +faststart",
+                "-c:v mpeg4 -b:v 4M -c:a aac -b:a 128k",
+                "-c:v h264 -c:a aac"
+            )
 
             var success = false
             for (enc in candidateEncoders) {
@@ -1251,6 +1253,27 @@ object VideoProcessor {
                 } else {
                     Log.w(TAG, "Re-encode join failed with encoder: $enc")
                 }
+            }
+
+            if (!success) {
+                Log.w(TAG, "Full AV join failed, attempting video-only join fallback")
+                val vOnlyFilterBuilder = StringBuilder()
+                for ((i, _) in resolvedFiles.withIndex()) {
+                    vOnlyFilterBuilder.append("[$i:v]scale=w=$targetW:h=$targetH:force_original_aspect_ratio=decrease:force_divisible_by=2,pad=$targetW:$targetH:(ow-iw)/2:(oh-ih)/2:black,setsar=1,format=yuv420p[v$i]; ")
+                }
+                for (i in resolvedFiles.indices) {
+                    vOnlyFilterBuilder.append("[v$i]")
+                }
+                vOnlyFilterBuilder.append("concat=n=${resolvedFiles.size}:v=1:a=0[outv]")
+                val fallbackCmd = "-y $inStr -filter_complex \"${vOnlyFilterBuilder.toString()}\" -map \"[outv]\" -c:v libx264 -preset ultrafast -crf 23 -an -pix_fmt yuv420p \"${outputFile.absolutePath}\""
+
+                success = executeFFmpegAsyncWithProgress(
+                    cmd = fallbackCmd,
+                    durationMs = totalDurationMs,
+                    startProgress = 0.1f,
+                    endProgress = 0.98f,
+                    onProgress = onProgress
+                ) && outputFile.exists() && outputFile.length() > 0
             }
 
             if (success) {
