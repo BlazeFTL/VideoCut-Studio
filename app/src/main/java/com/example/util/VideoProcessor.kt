@@ -1116,7 +1116,7 @@ object VideoProcessor {
     /**
      * Joins multiple videos together into a single video file.
      * If isFastMerge is true, uses fast stream concatenation.
-     * If false or fast merge fails, re-encodes to a normalized resolution (1280x720).
+     * If false or fast merge fails, re-encodes to a normalized resolution and framerate.
      */
     suspend fun joinVideosFastOrReencode(
         context: Context,
@@ -1145,8 +1145,8 @@ object VideoProcessor {
 
             val totalDurationMs = videoItems.sumOf { it.durationMs }.coerceAtLeast(1000L)
 
+            // 1. Attempt Fast Concat if requested and all formats are identical
             if (isFastMerge) {
-                // Build concat text file
                 val concatListFile = File(context.cacheDir, "join_concat_${System.currentTimeMillis()}.txt")
                 tempFilesToClean.add(concatListFile)
                 concatListFile.bufferedWriter().use { writer ->
@@ -1167,7 +1167,7 @@ object VideoProcessor {
                 }
             }
 
-            // Check audio track presence across resolved files
+            // 2. Check audio track presence across resolved files
             fun checkAudio(file: File): Boolean {
                 val retriever = MediaMetadataRetriever()
                 return try {
@@ -1182,48 +1182,50 @@ object VideoProcessor {
             }
 
             val audioFlags = resolvedFiles.map { checkAudio(it) }
-            val hasAudioInAll = audioFlags.all { it }
 
-            // Re-encode join (handles different resolutions, codecs, frame rates)
+            // 3. Determine target dimensions based on input orientations
             onProgress(0.1f)
-
-            // Determine target dimensions based on input orientations
             val isPortrait = videoItems.count { it.height > it.width } >= (videoItems.size / 2.0)
             val maxInputW = videoItems.maxOfOrNull { it.width } ?: (if (isPortrait) 720 else 1280)
             val maxInputH = videoItems.maxOfOrNull { it.height } ?: (if (isPortrait) 1280 else 720)
 
             val targetW = if (isPortrait) {
-                (maxInputW.coerceIn(360, 1080) / 2) * 2
+                ((maxInputW.coerceIn(360, 1080) / 2) * 2).coerceAtLeast(360)
             } else {
-                (maxInputW.coerceIn(640, 1920) / 2) * 2
+                ((maxInputW.coerceIn(640, 1920) / 2) * 2).coerceAtLeast(640)
             }
             val targetH = if (isPortrait) {
-                (maxInputH.coerceIn(640, 1920) / 2) * 2
+                ((maxInputH.coerceIn(640, 1920) / 2) * 2).coerceAtLeast(640)
             } else {
-                (maxInputH.coerceIn(360, 1080) / 2) * 2
+                ((maxInputH.coerceIn(360, 1080) / 2) * 2).coerceAtLeast(360)
             }
 
+            // Build filter script file to avoid FFmpeg command line quote/spacing issues
+            val filterScriptFile = File(context.cacheDir, "join_filter_${System.currentTimeMillis()}.txt")
+            tempFilesToClean.add(filterScriptFile)
+
+            val scriptBuilder = StringBuilder()
             val inputsBuilder = StringBuilder()
-            val filterBuilder = StringBuilder()
 
             for ((i, file) in resolvedFiles.withIndex()) {
                 inputsBuilder.append("-i \"${file.absolutePath}\" ")
-                filterBuilder.append("[$i:v]scale=w=$targetW:h=$targetH:force_original_aspect_ratio=decrease:force_divisible_by=2,pad=$targetW:$targetH:(ow-iw)/2:(oh-ih)/2:black,setsar=1,format=yuv420p[v$i]; ")
+                // Scale with aspect ratio preservation and black letterbox padding, set SAR=1, exact FPS=30, and reset PTS
+                scriptBuilder.append("[$i:v]settb=AVTB,setpts=PTS-STARTPTS,scale=w=$targetW:h=$targetH:force_original_aspect_ratio=decrease,pad=$targetW:$targetH:(ow-iw)/2:(oh-ih)/2:black,setsar=1,fps=30,format=yuv420p[v$i];\n")
                 if (audioFlags[i]) {
-                    filterBuilder.append("[$i:a]aformat=sample_fmts=fltp:sample_rates=44100:channel_layouts=stereo,aresample=async=1[a$i]; ")
+                    scriptBuilder.append("[$i:a]aformat=sample_fmts=fltp:sample_rates=44100:channel_layouts=stereo,aresample=async=1000,asetpts=PTS-STARTPTS[a$i];\n")
                 } else {
                     val durSec = String.format(java.util.Locale.US, "%.3f", (videoItems[i].durationMs.coerceAtLeast(500L)) / 1000.0)
-                    filterBuilder.append("aevalsrc=0:d=$durSec:s=44100:c=stereo[a$i]; ")
+                    scriptBuilder.append("anullsrc=r=44100:cl=stereo,atrim=duration=$durSec,asetpts=PTS-STARTPTS[a$i];\n")
                 }
             }
 
             for (i in resolvedFiles.indices) {
-                filterBuilder.append("[v$i][a$i]")
+                scriptBuilder.append("[v$i][a$i]")
             }
-            filterBuilder.append("concat=n=${resolvedFiles.size}:v=1:a=1[outv][outa]")
-            val mapString = "-map \"[outv]\" -map \"[outa]\""
+            scriptBuilder.append("concat=n=${resolvedFiles.size}:v=1:a=1[outv][outa]\n")
 
-            val filterComplexStr = filterBuilder.toString()
+            filterScriptFile.writeText(scriptBuilder.toString())
+
             val inStr = inputsBuilder.toString().trim()
 
             val candidateEncoders = listOf(
@@ -1236,7 +1238,7 @@ object VideoProcessor {
             var success = false
             for (enc in candidateEncoders) {
                 if (outputFile.exists()) outputFile.delete()
-                val reencodeCmd = "-y $inStr -filter_complex \"$filterComplexStr\" $mapString $enc \"${outputFile.absolutePath}\""
+                val reencodeCmd = "-y $inStr -filter_complex_script \"${filterScriptFile.absolutePath}\" -map \"[outv]\" -map \"[outa]\" $enc \"${outputFile.absolutePath}\""
                 Log.d(TAG, "Executing re-encode join: $reencodeCmd")
 
                 success = executeFFmpegAsyncWithProgress(
@@ -1255,32 +1257,46 @@ object VideoProcessor {
                 }
             }
 
+            // Fallback 4: Sequential intermediate segment normalization if complex filter graph fails
             if (!success) {
-                Log.w(TAG, "Full AV join failed, attempting video-only join fallback")
-                val vOnlyFilterBuilder = StringBuilder()
-                for ((i, _) in resolvedFiles.withIndex()) {
-                    vOnlyFilterBuilder.append("[$i:v]scale=w=$targetW:h=$targetH:force_original_aspect_ratio=decrease:force_divisible_by=2,pad=$targetW:$targetH:(ow-iw)/2:(oh-ih)/2:black,setsar=1,format=yuv420p[v$i]; ")
-                }
-                for (i in resolvedFiles.indices) {
-                    vOnlyFilterBuilder.append("[v$i]")
-                }
-                vOnlyFilterBuilder.append("concat=n=${resolvedFiles.size}:v=1:a=0[outv]")
-                val fallbackCmd = "-y $inStr -filter_complex \"${vOnlyFilterBuilder.toString()}\" -map \"[outv]\" -c:v libx264 -preset ultrafast -crf 23 -an -pix_fmt yuv420p \"${outputFile.absolutePath}\""
+                Log.w(TAG, "Full multi-input filter complex failed, attempting intermediate segment normalization")
+                val intermediateFiles = mutableListOf<File>()
+                var allTranscoded = true
+                for ((i, file) in resolvedFiles.withIndex()) {
+                    val interFile = File(context.cacheDir, "inter_join_${System.currentTimeMillis()}_$i.ts")
+                    tempFilesToClean.add(interFile)
+                    intermediateFiles.add(interFile)
 
-                success = executeFFmpegAsyncWithProgress(
-                    cmd = fallbackCmd,
-                    durationMs = totalDurationMs,
-                    startProgress = 0.1f,
-                    endProgress = 0.98f,
-                    onProgress = onProgress
-                ) && outputFile.exists() && outputFile.length() > 0
+                    val itemDurMs = videoItems[i].durationMs.coerceAtLeast(500L)
+                    val hasAud = audioFlags[i]
+                    val singleCmd = if (hasAud) {
+                        "-y -i \"${file.absolutePath}\" -vf \"scale=w=$targetW:h=$targetH:force_original_aspect_ratio=decrease,pad=$targetW:$targetH:(ow-iw)/2:(oh-ih)/2:black,setsar=1,fps=30,format=yuv420p\" -c:v libx264 -preset ultrafast -crf 23 -c:a aac -ar 44100 -ac 2 -f mpegts \"${interFile.absolutePath}\""
+                    } else {
+                        val durSec = String.format(java.util.Locale.US, "%.3f", itemDurMs / 1000.0)
+                        "-y -i \"${file.absolutePath}\" -f lavfi -i anullsrc=r=44100:cl=stereo -vf \"scale=w=$targetW:h=$targetH:force_original_aspect_ratio=decrease,pad=$targetW:$targetH:(ow-iw)/2:(oh-ih)/2:black,setsar=1,fps=30,format=yuv420p\" -c:v libx264 -preset ultrafast -crf 23 -c:a aac -ar 44100 -ac 2 -t $durSec -f mpegts \"${interFile.absolutePath}\""
+                    }
+
+                    val interSuccess = FFmpegKit.execute(singleCmd)
+                    if (!ReturnCode.isSuccess(interSuccess.returnCode) || !interFile.exists() || interFile.length() == 0L) {
+                        allTranscoded = false
+                        break
+                    }
+                    onProgress(0.1f + 0.8f * ((i + 1f) / resolvedFiles.size))
+                }
+
+                if (allTranscoded && intermediateFiles.all { it.exists() && it.length() > 0 }) {
+                    val concatStr = intermediateFiles.joinToString("|") { it.absolutePath }
+                    val finalMergeCmd = "-y -i \"concat:$concatStr\" -c copy -bsf:a aac_adtstoasc -movflags +faststart \"${outputFile.absolutePath}\""
+                    val finalSession = FFmpegKit.execute(finalMergeCmd)
+                    success = ReturnCode.isSuccess(finalSession.returnCode) && outputFile.exists() && outputFile.length() > 0
+                }
             }
 
             if (success) {
                 onProgress(1.0f)
                 return@withContext true
             } else {
-                Log.e(TAG, "All re-encode join candidates failed")
+                Log.e(TAG, "All join strategies failed")
                 return@withContext false
             }
         } catch (e: Exception) {

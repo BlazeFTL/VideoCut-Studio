@@ -7,6 +7,8 @@ import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
+import androidx.compose.foundation.gestures.detectDragGesturesAfterLongPress
+import androidx.compose.foundation.gestures.detectVerticalDragGestures
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -23,28 +25,20 @@ import androidx.compose.foundation.lazy.itemsIndexed
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
-import androidx.compose.foundation.gestures.detectDragGesturesAfterLongPress
-import androidx.compose.foundation.gestures.detectVerticalDragGestures
-import androidx.compose.material.icons.filled.DragHandle
-import androidx.compose.material.icons.filled.Reorder
-import androidx.compose.material.icons.filled.RotateLeft
-import androidx.compose.material.icons.filled.RotateRight
-import androidx.compose.material.icons.filled.SwapHoriz
-import androidx.compose.material.icons.filled.SwapVert
-import androidx.compose.ui.window.Dialog
-import androidx.compose.ui.window.DialogProperties
-import com.example.ui.components.VideoPlayerView
-import androidx.compose.runtime.mutableFloatStateOf
-import androidx.compose.ui.input.pointer.pointerInput
-import androidx.compose.material.icons.filled.DeleteOutline
-import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.ArrowDownward
 import androidx.compose.material.icons.filled.ArrowUpward
 import androidx.compose.material.icons.filled.CallMerge
 import androidx.compose.material.icons.filled.Close
+import androidx.compose.material.icons.filled.DeleteOutline
+import androidx.compose.material.icons.filled.DragHandle
 import androidx.compose.material.icons.filled.PlayArrow
+import androidx.compose.material.icons.filled.Reorder
+import androidx.compose.material.icons.filled.RotateLeft
+import androidx.compose.material.icons.filled.RotateRight
 import androidx.compose.material.icons.filled.Sort
+import androidx.compose.material.icons.filled.SwapHoriz
+import androidx.compose.material.icons.filled.SwapVert
 import androidx.compose.material.icons.outlined.Movie
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
@@ -60,14 +54,25 @@ import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableFloatStateOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberUpdatedState
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.asImageBitmap
+import androidx.compose.ui.graphics.graphicsLayer
+import androidx.compose.ui.input.pointer.pointerInput
+import androidx.compose.ui.platform.LocalDensity
+import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
+import androidx.compose.ui.window.Dialog
+import androidx.compose.ui.window.DialogProperties
+import androidx.compose.ui.zIndex
+import com.example.ui.components.VideoPlayerView
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
@@ -262,33 +267,75 @@ fun JoinVideoScreen(
 
             Spacer(modifier = Modifier.height(12.dp))
 
+            val density = LocalDensity.current
+            val itemSlotPx = with(density) { 92.dp.toPx() }
+            var activeDraggingUri by remember { mutableStateOf<Uri?>(null) }
+            var activeDragOffsetY by remember { mutableFloatStateOf(0f) }
+            val currentVideoList by rememberUpdatedState(videoList)
+            val currentOnMoveVideo by rememberUpdatedState(onMoveVideo)
+
             // Reorderable / Sortable Video List
             LazyColumn(
                 modifier = Modifier.weight(1f),
                 verticalArrangement = Arrangement.spacedBy(10.dp)
             ) {
                 itemsIndexed(videoList, key = { _, item -> item.uri.toString() }) { index, item ->
-                    var isDragging by remember { mutableStateOf(false) }
-                    var dragOffsetY by remember { mutableFloatStateOf(0f) }
+                    val isCurrentDragging = activeDraggingUri == item.uri
 
                     Card(
                         modifier = Modifier
                             .animateItem()
                             .fillMaxWidth()
+                            .zIndex(if (isCurrentDragging) 20f else 1f)
                             .graphicsLayer {
-                                translationY = dragOffsetY
-                                shadowElevation = if (isDragging) 12f else 2f
+                                translationY = if (isCurrentDragging) activeDragOffsetY else 0f
+                                scaleX = if (isCurrentDragging) 1.03f else 1.0f
+                                scaleY = if (isCurrentDragging) 1.03f else 1.0f
+                                shadowElevation = if (isCurrentDragging) 18f else 1.5f
                             }
-                            .clickable { onPlayVideo(item.uri) },
+                            .pointerInput(item.uri) {
+                                detectDragGesturesAfterLongPress(
+                                    onDragStart = {
+                                        activeDraggingUri = item.uri
+                                        activeDragOffsetY = 0f
+                                    },
+                                    onDragEnd = {
+                                        activeDraggingUri = null
+                                        activeDragOffsetY = 0f
+                                    },
+                                    onDragCancel = {
+                                        activeDraggingUri = null
+                                        activeDragOffsetY = 0f
+                                    },
+                                    onDrag = { change, dragAmount ->
+                                        change.consume()
+                                        if (activeDraggingUri == item.uri) {
+                                            activeDragOffsetY += dragAmount.y
+                                            val list = currentVideoList
+                                            val currentIdx = list.indexOfFirst { it.uri == item.uri }
+                                            if (currentIdx != -1) {
+                                                val threshold = itemSlotPx * 0.45f
+                                                if (activeDragOffsetY > threshold && currentIdx < list.size - 1) {
+                                                    currentOnMoveVideo(currentIdx, currentIdx + 1)
+                                                    activeDragOffsetY -= itemSlotPx
+                                                } else if (activeDragOffsetY < -threshold && currentIdx > 0) {
+                                                    currentOnMoveVideo(currentIdx, currentIdx - 1)
+                                                    activeDragOffsetY += itemSlotPx
+                                                }
+                                            }
+                                        }
+                                    }
+                                )
+                            },
                         colors = CardDefaults.cardColors(
-                            containerColor = if (isDragging) Color(0xFFF5F3FF) else Color.White
+                            containerColor = if (isCurrentDragging) Color(0xFFF3F0FF) else Color.White
                         ),
                         border = BorderStroke(
-                            width = if (isDragging) 2.dp else 1.dp,
-                            color = if (isDragging) MaterialTheme.colorScheme.primary else SurfaceBorderLight
+                            width = if (isCurrentDragging) 2.dp else 1.dp,
+                            color = if (isCurrentDragging) MaterialTheme.colorScheme.primary else SurfaceBorderLight
                         ),
                         elevation = CardDefaults.cardElevation(
-                            defaultElevation = if (isDragging) 8.dp else 1.dp
+                            defaultElevation = if (isCurrentDragging) 10.dp else 1.dp
                         ),
                         shape = RoundedCornerShape(12.dp)
                     ) {
@@ -298,34 +345,39 @@ fun JoinVideoScreen(
                                 .padding(10.dp),
                             verticalAlignment = Alignment.CenterVertically
                         ) {
-                            // Drag Handle Icon on the left for reordering
+                            // Immediate Drag Handle Icon on the left for quick reordering
                             Box(
                                 modifier = Modifier
                                     .size(36.dp)
-                                    .pointerInput(videoList.size, index) {
+                                    .pointerInput(item.uri) {
                                         detectVerticalDragGestures(
                                             onDragStart = {
-                                                isDragging = true
-                                                dragOffsetY = 0f
+                                                activeDraggingUri = item.uri
+                                                activeDragOffsetY = 0f
                                             },
                                             onDragEnd = {
-                                                isDragging = false
-                                                dragOffsetY = 0f
+                                                activeDraggingUri = null
+                                                activeDragOffsetY = 0f
                                             },
                                             onDragCancel = {
-                                                isDragging = false
-                                                dragOffsetY = 0f
+                                                activeDraggingUri = null
+                                                activeDragOffsetY = 0f
                                             },
                                             onVerticalDrag = { change, dragAmount ->
                                                 change.consume()
-                                                dragOffsetY += dragAmount
-                                                val stepPx = 160f
-                                                val delta = kotlin.math.round(dragOffsetY / stepPx).toInt()
-                                                if (delta != 0) {
-                                                    val targetIndex = (index + delta).coerceIn(0, videoList.size - 1)
-                                                    if (targetIndex != index) {
-                                                        onMoveVideo(index, targetIndex)
-                                                        dragOffsetY = 0f
+                                                if (activeDraggingUri == item.uri) {
+                                                    activeDragOffsetY += dragAmount
+                                                    val list = currentVideoList
+                                                    val currentIdx = list.indexOfFirst { it.uri == item.uri }
+                                                    if (currentIdx != -1) {
+                                                        val threshold = itemSlotPx * 0.45f
+                                                        if (activeDragOffsetY > threshold && currentIdx < list.size - 1) {
+                                                            currentOnMoveVideo(currentIdx, currentIdx + 1)
+                                                            activeDragOffsetY -= itemSlotPx
+                                                        } else if (activeDragOffsetY < -threshold && currentIdx > 0) {
+                                                            currentOnMoveVideo(currentIdx, currentIdx - 1)
+                                                            activeDragOffsetY += itemSlotPx
+                                                        }
                                                     }
                                                 }
                                             }
@@ -336,8 +388,8 @@ fun JoinVideoScreen(
                                 Icon(
                                     imageVector = Icons.Default.DragHandle,
                                     contentDescription = "Drag to reorder",
-                                    tint = if (isDragging) MaterialTheme.colorScheme.primary else TextSecondaryMuted,
-                                    modifier = Modifier.size(22.dp)
+                                    tint = if (isCurrentDragging) MaterialTheme.colorScheme.primary else TextSecondaryMuted,
+                                    modifier = Modifier.size(24.dp)
                                 )
                             }
 
@@ -348,7 +400,8 @@ fun JoinVideoScreen(
                                 modifier = Modifier
                                     .size(60.dp, 60.dp)
                                     .clip(RoundedCornerShape(8.dp))
-                                    .background(MaterialTheme.colorScheme.primaryContainer),
+                                    .background(MaterialTheme.colorScheme.primaryContainer)
+                                    .clickable { onPlayVideo(item.uri) },
                                 contentAlignment = Alignment.Center
                             ) {
                                 if (item.thumbnail != null) {
@@ -400,39 +453,11 @@ fun JoinVideoScreen(
 
                             Spacer(modifier = Modifier.width(10.dp))
 
-                            // Details with Long-Press Drag Anywhere Support
+                            // Video details info
                             Column(
                                 modifier = Modifier
                                     .weight(1f)
-                                    .pointerInput(videoList.size, index) {
-                                        detectDragGesturesAfterLongPress(
-                                            onDragStart = {
-                                                isDragging = true
-                                                dragOffsetY = 0f
-                                            },
-                                            onDragEnd = {
-                                                isDragging = false
-                                                dragOffsetY = 0f
-                                            },
-                                            onDragCancel = {
-                                                isDragging = false
-                                                dragOffsetY = 0f
-                                            },
-                                            onDrag = { change, dragAmount ->
-                                                change.consume()
-                                                dragOffsetY += dragAmount.y
-                                                val stepPx = 160f
-                                                val delta = kotlin.math.round(dragOffsetY / stepPx).toInt()
-                                                if (delta != 0) {
-                                                    val targetIndex = (index + delta).coerceIn(0, videoList.size - 1)
-                                                    if (targetIndex != index) {
-                                                        onMoveVideo(index, targetIndex)
-                                                        dragOffsetY = 0f
-                                                    }
-                                                }
-                                            }
-                                        )
-                                    }
+                                    .clickable { onPlayVideo(item.uri) }
                             ) {
                                 Text(
                                     text = item.title,
