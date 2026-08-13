@@ -1,0 +1,6 @@
+{
+  "name": "VideoCut Studio",
+  "description": "Fast video cutter with single & multi-segment trimming and custom video compression.",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}
