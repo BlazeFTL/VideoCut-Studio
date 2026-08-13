@@ -62,6 +62,7 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.draw.clipToBounds
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.asImageBitmap
 import androidx.compose.ui.graphics.graphicsLayer
@@ -276,7 +277,9 @@ fun JoinVideoScreen(
 
             // Reorderable / Sortable Video List
             LazyColumn(
-                modifier = Modifier.weight(1f),
+                modifier = Modifier
+                    .weight(1f)
+                    .clipToBounds(),
                 verticalArrangement = Arrangement.spacedBy(10.dp)
             ) {
                 itemsIndexed(videoList, key = { _, item -> item.uri.toString() }) { index, item ->
@@ -310,10 +313,13 @@ fun JoinVideoScreen(
                                     onDrag = { change, dragAmount ->
                                         change.consume()
                                         if (activeDraggingUri == item.uri) {
-                                            activeDragOffsetY += dragAmount.y
                                             val list = currentVideoList
                                             val currentIdx = list.indexOfFirst { it.uri == item.uri }
                                             if (currentIdx != -1) {
+                                                val maxUp = -currentIdx * itemSlotPx
+                                                val maxDown = (list.size - 1 - currentIdx) * itemSlotPx
+                                                activeDragOffsetY = (activeDragOffsetY + dragAmount.y).coerceIn(maxUp, maxDown)
+
                                                 val threshold = itemSlotPx * 0.45f
                                                 if (activeDragOffsetY > threshold && currentIdx < list.size - 1) {
                                                     currentOnMoveVideo(currentIdx, currentIdx + 1)
@@ -366,10 +372,13 @@ fun JoinVideoScreen(
                                             onVerticalDrag = { change, dragAmount ->
                                                 change.consume()
                                                 if (activeDraggingUri == item.uri) {
-                                                    activeDragOffsetY += dragAmount
                                                     val list = currentVideoList
                                                     val currentIdx = list.indexOfFirst { it.uri == item.uri }
                                                     if (currentIdx != -1) {
+                                                        val maxUp = -currentIdx * itemSlotPx
+                                                        val maxDown = (list.size - 1 - currentIdx) * itemSlotPx
+                                                        activeDragOffsetY = (activeDragOffsetY + dragAmount).coerceIn(maxUp, maxDown)
+
                                                         val threshold = itemSlotPx * 0.45f
                                                         if (activeDragOffsetY > threshold && currentIdx < list.size - 1) {
                                                             currentOnMoveVideo(currentIdx, currentIdx + 1)
