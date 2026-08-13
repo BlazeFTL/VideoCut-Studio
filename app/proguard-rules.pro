@@ -2,6 +2,9 @@
 # You can control the set of applied configuration files using the
 # proguardFiles setting in build.gradle.
 
+# General Keep Attributes
+-keepattributes *Annotation*,Signature,InnerClasses,EnclosingMethod,SourceFile,LineNumberTable
+
 # FFmpegKit
 -keep class com.arthenica.ffmpegkit.** { *; }
 -dontwarn com.arthenica.ffmpegkit.**
@@ -20,7 +23,6 @@
 # Moshi
 -keep class com.squareup.moshi.** { *; }
 -dontwarn com.squareup.moshi.**
--keepattributes *Annotation*
 -keepclassmembers class * {
     @com.squareup.moshi.* <fields>;
     @com.squareup.moshi.* <methods>;
@@ -31,14 +33,18 @@
 -dontwarn okio.**
 -dontwarn retrofit2.**
 -keep class retrofit2.** { *; }
--keepattributes Signature
--keepattributes Exceptions
 
 # Coroutines
 -dontwarn kotlinx.coroutines.**
 -keepclassmembers class kotlinx.coroutines.** { *; }
 
+# Jetpack Compose & Navigation
+-dontwarn androidx.compose.**
+-dontwarn androidx.navigation.**
+
 # Project Models & Entities
 -keep class com.example.data.** { *; }
 -keep class com.example.util.** { *; }
+-keep class com.example.ui.** { *; }
+
 
