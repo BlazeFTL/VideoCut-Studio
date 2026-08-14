@@ -6,6 +6,7 @@ import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
+import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.gestures.detectDragGesturesAfterLongPress
 import androidx.compose.foundation.gestures.detectVerticalDragGestures
@@ -81,6 +82,7 @@ import androidx.compose.ui.unit.sp
 import com.example.model.VideoItem
 import com.example.ui.JoinSortOption
 import com.example.ui.theme.EmeraldSuccess
+import com.example.ui.theme.OnPrimaryContainerDark
 import com.example.ui.theme.PrimaryContainerLight
 import com.example.ui.theme.PrimaryIndigo
 import com.example.ui.theme.SurfaceBorderLight
@@ -100,18 +102,19 @@ fun JoinVideoScreen(
     onProcessJoin: () -> Unit,
     isProcessing: Boolean,
     onOpenCustomPicker: () -> Unit = {},
-    onRotateVideoInJoin: (videoItem: VideoItem, rotationDegrees: Int, flipH: Boolean, flipV: Boolean, onSuccess: (VideoItem) -> Unit) -> Unit = { _, _, _, _, _ -> }
+    onRotateVideoInJoin: (videoItem: VideoItem, rotationDegrees: Int, flipH: Boolean, flipV: Boolean) -> Unit = { _, _, _, _ -> }
 ) {
     var isSortDropdownExpanded by remember { mutableStateOf(false) }
     var videoToRotate by remember { mutableStateOf<VideoItem?>(null) }
 
-    // Check if all resolutions match
+    // Check if all resolutions match and no custom rotations/flips exist
     val resolutionsMatch = remember(videoList) {
         if (videoList.isEmpty()) true
         else {
             val firstW = videoList.first().width
             val firstH = videoList.first().height
-            videoList.all { it.width == firstW && it.height == firstH }
+            val hasTransform = videoList.any { it.rotationDegrees != 0 || it.flipHorizontal || it.flipVertical }
+            !hasTransform && videoList.all { it.width == firstW && it.height == firstH }
         }
     }
 
@@ -460,9 +463,7 @@ fun JoinVideoScreen(
                                 }
                             }
 
-                            Spacer(modifier = Modifier.width(10.dp))
-
-                            // Video details info
+                            Spacer(modifier = Modifier.width(10.dp))                                // Video details info
                             Column(
                                 modifier = Modifier
                                     .weight(1f)
@@ -481,6 +482,40 @@ fun JoinVideoScreen(
                                     fontSize = 11.sp,
                                     color = TextSecondaryMuted
                                 )
+
+                                val hasItemTransform = item.rotationDegrees != 0 || item.flipHorizontal || item.flipVertical
+                                if (hasItemTransform) {
+                                    val transformLabel = buildString {
+                                        if (item.rotationDegrees != 0) append("${item.rotationDegrees}°")
+                                        if (item.flipHorizontal) {
+                                            if (isNotEmpty()) append(" • ")
+                                            append("Flip H")
+                                        }
+                                        if (item.flipVertical) {
+                                            if (isNotEmpty()) append(" • ")
+                                            append("Flip V")
+                                        }
+                                    }
+                                    Row(
+                                        verticalAlignment = Alignment.CenterVertically,
+                                        modifier = Modifier.padding(top = 3.dp)
+                                    ) {
+                                        Box(
+                                            modifier = Modifier
+                                                .clip(RoundedCornerShape(6.dp))
+                                                .background(PrimaryContainerLight)
+                                                .border(0.5.dp, PrimaryIndigo.copy(alpha = 0.3f), RoundedCornerShape(6.dp))
+                                                .padding(horizontal = 6.dp, vertical = 2.dp)
+                                        ) {
+                                            Text(
+                                                text = "🔄 $transformLabel",
+                                                fontSize = 10.sp,
+                                                fontWeight = FontWeight.Bold,
+                                                color = OnPrimaryContainerDark
+                                            )
+                                        }
+                                    }
+                                }
                             }
 
                             // Quick Move Up / Move Down Actions
@@ -507,14 +542,18 @@ fun JoinVideoScreen(
                             Spacer(modifier = Modifier.width(2.dp))
 
                             // Rotate Video Option Button
+                            val hasItemTransform = item.rotationDegrees != 0 || item.flipHorizontal || item.flipVertical
                             IconButton(
                                 onClick = { videoToRotate = item },
-                                modifier = Modifier.size(32.dp)
+                                modifier = Modifier
+                                    .size(34.dp)
+                                    .clip(RoundedCornerShape(8.dp))
+                                    .background(if (hasItemTransform) PrimaryContainerLight else Color.Transparent)
                             ) {
                                 Icon(
                                     imageVector = Icons.Default.RotateRight,
                                     contentDescription = "Rotate Video",
-                                    tint = MaterialTheme.colorScheme.primary,
+                                    tint = if (hasItemTransform) PrimaryIndigo else MaterialTheme.colorScheme.primary,
                                     modifier = Modifier.size(20.dp)
                                 )
                             }
@@ -579,9 +618,8 @@ fun JoinVideoScreen(
             onDismiss = { videoToRotate = null },
             onSaveRotation = { degrees, flipH, flipV ->
                 val targetVideo = videoToRotate!!
-                onRotateVideoInJoin(targetVideo, degrees, flipH, flipV) { updatedItem ->
-                    videoToRotate = null
-                }
+                onRotateVideoInJoin(targetVideo, degrees, flipH, flipV)
+                videoToRotate = null
             }
         )
     }
@@ -593,9 +631,9 @@ fun JoinRotateVideoDialog(
     onDismiss: () -> Unit,
     onSaveRotation: (rotationDegrees: Int, flipHorizontal: Boolean, flipVertical: Boolean) -> Unit
 ) {
-    var rotationDegrees by remember { mutableStateOf(0) }
-    var flipHorizontal by remember { mutableStateOf(false) }
-    var flipVertical by remember { mutableStateOf(false) }
+    var rotationDegrees by remember { mutableStateOf(videoItem.rotationDegrees) }
+    var flipHorizontal by remember { mutableStateOf(videoItem.flipHorizontal) }
+    var flipVertical by remember { mutableStateOf(videoItem.flipVertical) }
 
     Dialog(
         onDismissRequest = onDismiss,
@@ -667,55 +705,94 @@ fun JoinRotateVideoDialog(
                     }
                 }
 
-                // Rotation Controls (NO time ranges shown)
+                // Rotation Controls - Light Aesthetic 4 Buttons
                 Surface(
                     modifier = Modifier.fillMaxWidth(),
-                    color = Color(0xFF18181B),
-                    shape = RoundedCornerShape(12.dp)
+                    color = Color(0xFFF8FAFC),
+                    shape = RoundedCornerShape(14.dp),
+                    border = BorderStroke(1.dp, SurfaceBorderLight)
                 ) {
                     Row(
                         modifier = Modifier
                             .fillMaxWidth()
-                            .padding(vertical = 8.dp, horizontal = 12.dp),
+                            .padding(vertical = 10.dp, horizontal = 12.dp),
                         horizontalArrangement = Arrangement.SpaceEvenly,
                         verticalAlignment = Alignment.CenterVertically
                     ) {
                         // CCW (-90)
-                        IconButton(
+                        Surface(
                             onClick = { rotationDegrees = ((rotationDegrees - 90) % 360 + 360) % 360 },
-                            modifier = Modifier.size(40.dp)
+                            shape = RoundedCornerShape(12.dp),
+                            color = Color.White,
+                            border = BorderStroke(1.dp, SurfaceBorderLight),
+                            shadowElevation = 1.dp,
+                            modifier = Modifier.size(46.dp)
                         ) {
-                            Icon(Icons.Default.RotateLeft, contentDescription = "CCW", tint = Color.White)
+                            Box(contentAlignment = Alignment.Center) {
+                                Icon(
+                                    imageVector = Icons.Default.RotateLeft,
+                                    contentDescription = "Rotate CCW (-90°)",
+                                    tint = MaterialTheme.colorScheme.primary,
+                                    modifier = Modifier.size(24.dp)
+                                )
+                            }
                         }
 
                         // CW (+90)
-                        IconButton(
+                        Surface(
                             onClick = { rotationDegrees = (rotationDegrees + 90) % 360 },
-                            modifier = Modifier.size(40.dp)
+                            shape = RoundedCornerShape(12.dp),
+                            color = Color.White,
+                            border = BorderStroke(1.dp, SurfaceBorderLight),
+                            shadowElevation = 1.dp,
+                            modifier = Modifier.size(46.dp)
                         ) {
-                            Icon(Icons.Default.RotateRight, contentDescription = "CW", tint = Color.White)
+                            Box(contentAlignment = Alignment.Center) {
+                                Icon(
+                                    imageVector = Icons.Default.RotateRight,
+                                    contentDescription = "Rotate CW (+90°)",
+                                    tint = MaterialTheme.colorScheme.primary,
+                                    modifier = Modifier.size(24.dp)
+                                )
+                            }
                         }
 
                         // Flip H
-                        IconButton(
+                        Surface(
                             onClick = { flipHorizontal = !flipHorizontal },
-                            modifier = Modifier
-                                .size(40.dp)
-                                .clip(CircleShape)
-                                .background(if (flipHorizontal) MaterialTheme.colorScheme.primary else Color.Transparent)
+                            shape = RoundedCornerShape(12.dp),
+                            color = if (flipHorizontal) MaterialTheme.colorScheme.primary else Color.White,
+                            border = BorderStroke(1.dp, if (flipHorizontal) MaterialTheme.colorScheme.primary else SurfaceBorderLight),
+                            shadowElevation = if (flipHorizontal) 2.dp else 1.dp,
+                            modifier = Modifier.size(46.dp)
                         ) {
-                            Icon(Icons.Default.SwapHoriz, contentDescription = "Flip H", tint = Color.White)
+                            Box(contentAlignment = Alignment.Center) {
+                                Icon(
+                                    imageVector = Icons.Default.SwapHoriz,
+                                    contentDescription = "Flip Horizontal",
+                                    tint = if (flipHorizontal) Color.White else MaterialTheme.colorScheme.primary,
+                                    modifier = Modifier.size(24.dp)
+                                )
+                            }
                         }
 
                         // Flip V
-                        IconButton(
+                        Surface(
                             onClick = { flipVertical = !flipVertical },
-                            modifier = Modifier
-                                .size(40.dp)
-                                .clip(CircleShape)
-                                .background(if (flipVertical) MaterialTheme.colorScheme.primary else Color.Transparent)
+                            shape = RoundedCornerShape(12.dp),
+                            color = if (flipVertical) MaterialTheme.colorScheme.primary else Color.White,
+                            border = BorderStroke(1.dp, if (flipVertical) MaterialTheme.colorScheme.primary else SurfaceBorderLight),
+                            shadowElevation = if (flipVertical) 2.dp else 1.dp,
+                            modifier = Modifier.size(46.dp)
                         ) {
-                            Icon(Icons.Default.SwapVert, contentDescription = "Flip V", tint = Color.White)
+                            Box(contentAlignment = Alignment.Center) {
+                                Icon(
+                                    imageVector = Icons.Default.SwapVert,
+                                    contentDescription = "Flip Vertical",
+                                    tint = if (flipVertical) Color.White else MaterialTheme.colorScheme.primary,
+                                    modifier = Modifier.size(24.dp)
+                                )
+                            }
                         }
                     }
                 }

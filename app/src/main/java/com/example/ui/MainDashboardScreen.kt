@@ -256,7 +256,7 @@ fun MainDashboardScreen(
                             onProcessJoin = viewModel::processJoinVideos,
                             isProcessing = isProcessing,
                             onOpenCustomPicker = { viewModel.openCustomPicker(NavigationTab.JOIN_VIDEO) },
-                            onRotateVideoInJoin = viewModel::processRotateVideoForItem
+                            onRotateVideoInJoin = viewModel::updateJoinVideoRotation
                         )
                     }
 

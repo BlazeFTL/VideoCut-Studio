@@ -1183,11 +1183,21 @@ object VideoProcessor {
 
             val audioFlags = resolvedFiles.map { checkAudio(it) }
 
-            // 3. Determine target dimensions based on input orientations
+            // 3. Determine target dimensions based on input orientations and rotation transforms
             onProgress(0.1f)
-            val isPortrait = videoItems.count { it.height > it.width } >= (videoItems.size / 2.0)
-            val maxInputW = videoItems.maxOfOrNull { it.width } ?: (if (isPortrait) 720 else 1280)
-            val maxInputH = videoItems.maxOfOrNull { it.height } ?: (if (isPortrait) 1280 else 720)
+            fun getEffectiveDimensions(item: VideoItem): Pair<Int, Int> {
+                val normDeg = ((item.rotationDegrees % 360) + 360) % 360
+                return if (normDeg == 90 || normDeg == 270) {
+                    Pair(item.height, item.width)
+                } else {
+                    Pair(item.width, item.height)
+                }
+            }
+
+            val effectiveDims = videoItems.map { getEffectiveDimensions(it) }
+            val isPortrait = effectiveDims.count { it.second > it.first } >= (effectiveDims.size / 2.0)
+            val maxInputW = effectiveDims.maxOfOrNull { it.first } ?: (if (isPortrait) 720 else 1280)
+            val maxInputH = effectiveDims.maxOfOrNull { it.second } ?: (if (isPortrait) 1280 else 720)
 
             val targetW = if (isPortrait) {
                 ((maxInputW.coerceIn(360, 1080) / 2) * 2).coerceAtLeast(360)
@@ -1209,8 +1219,21 @@ object VideoProcessor {
 
             for ((i, file) in resolvedFiles.withIndex()) {
                 inputsBuilder.append("-i \"${file.absolutePath}\" ")
+                
+                // Build per-item rotation and flip filters
+                val itemFilters = mutableListOf<String>()
+                val normDeg = ((videoItems[i].rotationDegrees % 360) + 360) % 360
+                when (normDeg) {
+                    90 -> itemFilters.add("transpose=1")
+                    180 -> itemFilters.add("transpose=1,transpose=1")
+                    270 -> itemFilters.add("transpose=2")
+                }
+                if (videoItems[i].flipHorizontal) itemFilters.add("hflip")
+                if (videoItems[i].flipVertical) itemFilters.add("vflip")
+                val rotFilterPrefix = if (itemFilters.isNotEmpty()) itemFilters.joinToString(",") + "," else ""
+
                 // Scale with aspect ratio preservation and black letterbox padding, set SAR=1, exact FPS=30, and reset PTS
-                scriptBuilder.append("[$i:v]settb=AVTB,setpts=PTS-STARTPTS,scale=w=$targetW:h=$targetH:force_original_aspect_ratio=decrease,pad=$targetW:$targetH:(ow-iw)/2:(oh-ih)/2:black,setsar=1,fps=30,format=yuv420p[v$i];\n")
+                scriptBuilder.append("[$i:v]settb=AVTB,setpts=PTS-STARTPTS,${rotFilterPrefix}scale=w=$targetW:h=$targetH:force_original_aspect_ratio=decrease,pad=$targetW:$targetH:(ow-iw)/2:(oh-ih)/2:black,setsar=1,fps=30,format=yuv420p[v$i];\n")
                 if (audioFlags[i]) {
                     scriptBuilder.append("[$i:a]aformat=sample_fmts=fltp:sample_rates=44100:channel_layouts=stereo,aresample=async=1000,asetpts=PTS-STARTPTS[a$i];\n")
                 } else {
@@ -1269,11 +1292,24 @@ object VideoProcessor {
 
                     val itemDurMs = videoItems[i].durationMs.coerceAtLeast(500L)
                     val hasAud = audioFlags[i]
+                    
+                    val itemFilters = mutableListOf<String>()
+                    val normDeg = ((videoItems[i].rotationDegrees % 360) + 360) % 360
+                    when (normDeg) {
+                        90 -> itemFilters.add("transpose=1")
+                        180 -> itemFilters.add("transpose=1,transpose=1")
+                        270 -> itemFilters.add("transpose=2")
+                    }
+                    if (videoItems[i].flipHorizontal) itemFilters.add("hflip")
+                    if (videoItems[i].flipVertical) itemFilters.add("vflip")
+                    val rotFilterPrefix = if (itemFilters.isNotEmpty()) itemFilters.joinToString(",") + "," else ""
+                    val vfParam = "${rotFilterPrefix}scale=w=$targetW:h=$targetH:force_original_aspect_ratio=decrease,pad=$targetW:$targetH:(ow-iw)/2:(oh-ih)/2:black,setsar=1,fps=30,format=yuv420p"
+
                     val singleCmd = if (hasAud) {
-                        "-y -i \"${file.absolutePath}\" -vf \"scale=w=$targetW:h=$targetH:force_original_aspect_ratio=decrease,pad=$targetW:$targetH:(ow-iw)/2:(oh-ih)/2:black,setsar=1,fps=30,format=yuv420p\" -c:v libx264 -preset ultrafast -crf 23 -c:a aac -ar 44100 -ac 2 -f mpegts \"${interFile.absolutePath}\""
+                        "-y -i \"${file.absolutePath}\" -vf \"$vfParam\" -c:v libx264 -preset ultrafast -crf 23 -c:a aac -ar 44100 -ac 2 -f mpegts \"${interFile.absolutePath}\""
                     } else {
                         val durSec = String.format(java.util.Locale.US, "%.3f", itemDurMs / 1000.0)
-                        "-y -i \"${file.absolutePath}\" -f lavfi -i anullsrc=r=44100:cl=stereo -vf \"scale=w=$targetW:h=$targetH:force_original_aspect_ratio=decrease,pad=$targetW:$targetH:(ow-iw)/2:(oh-ih)/2:black,setsar=1,fps=30,format=yuv420p\" -c:v libx264 -preset ultrafast -crf 23 -c:a aac -ar 44100 -ac 2 -t $durSec -f mpegts \"${interFile.absolutePath}\""
+                        "-y -i \"${file.absolutePath}\" -f lavfi -i anullsrc=r=44100:cl=stereo -vf \"$vfParam\" -c:v libx264 -preset ultrafast -crf 23 -c:a aac -ar 44100 -ac 2 -t $durSec -f mpegts \"${interFile.absolutePath}\""
                     }
 
                     val interSuccess = FFmpegKit.execute(singleCmd)

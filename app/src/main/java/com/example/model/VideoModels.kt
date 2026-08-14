@@ -11,7 +11,10 @@ data class VideoItem(
     val width: Int = 1280,
     val height: Int = 720,
     val path: String? = null,
-    val thumbnail: Bitmap? = null
+    val thumbnail: Bitmap? = null,
+    val rotationDegrees: Int = 0,
+    val flipHorizontal: Boolean = false,
+    val flipVertical: Boolean = false
 )
 
 data class CutSegment(

@@ -691,7 +691,8 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
 
             val firstW = videos.first().width
             val firstH = videos.first().height
-            val isFastMerge = videos.all { it.width == firstW && it.height == firstH }
+            val hasCustomTransform = videos.any { it.rotationDegrees != 0 || it.flipHorizontal || it.flipVertical }
+            val isFastMerge = !hasCustomTransform && videos.all { it.width == firstW && it.height == firstH }
 
             val outputFileName = "Joined_${videos.size}v_${System.currentTimeMillis()}_Cut.mp4"
             val outputDir = VideoProcessor.getVideoCutOutputDir(getApplication())
@@ -901,62 +902,29 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
         }
     }
 
-    fun processRotateVideoForItem(
+    fun updateJoinVideoRotation(
         videoItem: VideoItem,
         rotationDegrees: Int,
         flipHorizontal: Boolean,
-        flipVertical: Boolean,
-        onSuccess: (VideoItem) -> Unit
+        flipVertical: Boolean
     ) {
-        if (_isProcessing.value) return
-
-        currentProcessingJob = viewModelScope.launch {
-            _isProcessing.value = true
-            _processingProgress.value = 0f
-            _statusMessage.value = "Rotating video..."
-            startBackgroundServiceIfNeeded("Rotating Video", "Rotating video...")
-            val startTimeMs = System.currentTimeMillis()
-
-            val outputFileName = "Rotated_${rotationDegrees}deg_${System.currentTimeMillis()}.mp4"
-            val outputDir = VideoProcessor.getVideoCutOutputDir(getApplication())
-            val outputFile = File(outputDir, outputFileName)
-
-            val success = VideoProcessor.rotateVideo(
-                context = getApplication(),
-                sourceUri = videoItem.uri,
-                rotationDegrees = rotationDegrees,
+        val list = _joinVideosList.value.toMutableList()
+        val index = list.indexOfFirst { it.uri == videoItem.uri || (!it.path.isNullOrEmpty() && it.path == videoItem.path) }
+        if (index != -1) {
+            val normDeg = ((rotationDegrees % 360) + 360) % 360
+            list[index] = list[index].copy(
+                rotationDegrees = normDeg,
                 flipHorizontal = flipHorizontal,
-                flipVertical = flipVertical,
-                isTimelineRange = false,
-                startMs = 0L,
-                endMs = videoItem.durationMs,
-                totalDurationMs = videoItem.durationMs,
-                outputFile = outputFile,
-                onProgress = { p ->
-                    _processingProgress.value = p
-                    updateBackgroundServiceProgress("Rotating video...", p)
-                }
+                flipVertical = flipVertical
             )
-
-            _isProcessing.value = false
-            stopBackgroundServiceIfNeeded()
-
-            if (success && outputFile.exists()) {
-                VideoProcessor.notifyMediaScanner(getApplication(), outputFile)
-                val updatedMetadata = VideoProcessor.getVideoMetadata(getApplication(), Uri.fromFile(outputFile))
-
-                // Replace item in Join Videos List if present
-                val list = _joinVideosList.value.toMutableList()
-                val index = list.indexOfFirst { it.uri == videoItem.uri || (!it.path.isNullOrEmpty() && it.path == videoItem.path) }
-                if (index != -1) {
-                    list[index] = updatedMetadata
-                    _joinVideosList.value = list
+            _joinVideosList.value = list
+            viewModelScope.launch {
+                val label = buildString {
+                    append("Rotation set to ${normDeg}°")
+                    if (flipHorizontal) append(" • Flip H")
+                    if (flipVertical) append(" • Flip V")
                 }
-
-                onSuccess(updatedMetadata)
-                _userMessage.emit("Video rotated and saved! Updated in Join list.")
-            } else {
-                _userMessage.emit("Failed to rotate video")
+                _userMessage.emit("$label (will apply during Join)")
             }
         }
     }

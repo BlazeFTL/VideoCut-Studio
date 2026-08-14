@@ -238,10 +238,11 @@ fun RotateVideoScreen(
                         }
                     }
 
-                    // Player Toolbar Controls (Directly updates rotation & active segment)
+                    // Player Toolbar Controls (Directly updates rotation & active segment) - Light Aesthetic
                     Surface(
                         modifier = Modifier.fillMaxWidth(),
-                        color = Color(0xFF18181B)
+                        color = Color(0xFFF8FAFC),
+                        border = BorderStroke(1.dp, SurfaceBorderLight)
                     ) {
                         Row(
                             modifier = Modifier
@@ -251,7 +252,7 @@ fun RotateVideoScreen(
                             verticalAlignment = Alignment.CenterVertically
                         ) {
                             // Rotate CCW (-90)
-                            IconButton(
+                            Surface(
                                 onClick = {
                                     val target = ((rotationDegrees - 90) % 360 + 360) % 360
                                     onSetRotationDegrees(target)
@@ -260,13 +261,24 @@ fun RotateVideoScreen(
                                         onUpdateRotatePart(lastPart.copy(rotationDegrees = target))
                                     }
                                 },
-                                modifier = Modifier.size(44.dp)
+                                shape = RoundedCornerShape(12.dp),
+                                color = Color.White,
+                                border = BorderStroke(1.dp, SurfaceBorderLight),
+                                shadowElevation = 1.dp,
+                                modifier = Modifier.size(46.dp)
                             ) {
-                                Icon(Icons.Default.RotateLeft, contentDescription = "Rotate CCW", tint = Color.White, modifier = Modifier.size(24.dp))
+                                Box(contentAlignment = Alignment.Center) {
+                                    Icon(
+                                        imageVector = Icons.Default.RotateLeft,
+                                        contentDescription = "Rotate CCW (-90°)",
+                                        tint = MaterialTheme.colorScheme.primary,
+                                        modifier = Modifier.size(24.dp)
+                                    )
+                                }
                             }
 
                             // Rotate CW (+90)
-                            IconButton(
+                            Surface(
                                 onClick = {
                                     val target = (rotationDegrees + 90) % 360
                                     onSetRotationDegrees(target)
@@ -275,31 +287,58 @@ fun RotateVideoScreen(
                                         onUpdateRotatePart(lastPart.copy(rotationDegrees = target))
                                     }
                                 },
-                                modifier = Modifier.size(44.dp)
+                                shape = RoundedCornerShape(12.dp),
+                                color = Color.White,
+                                border = BorderStroke(1.dp, SurfaceBorderLight),
+                                shadowElevation = 1.dp,
+                                modifier = Modifier.size(46.dp)
                             ) {
-                                Icon(Icons.Default.RotateRight, contentDescription = "Rotate CW", tint = Color.White, modifier = Modifier.size(24.dp))
+                                Box(contentAlignment = Alignment.Center) {
+                                    Icon(
+                                        imageVector = Icons.Default.RotateRight,
+                                        contentDescription = "Rotate CW (+90°)",
+                                        tint = MaterialTheme.colorScheme.primary,
+                                        modifier = Modifier.size(24.dp)
+                                    )
+                                }
                             }
 
                             // Flip Horizontal
-                            IconButton(
+                            Surface(
                                 onClick = onToggleFlipHorizontal,
-                                modifier = Modifier
-                                    .size(44.dp)
-                                    .clip(CircleShape)
-                                    .background(if (flipHorizontal) MaterialTheme.colorScheme.primary else Color.Transparent)
+                                shape = RoundedCornerShape(12.dp),
+                                color = if (flipHorizontal) MaterialTheme.colorScheme.primary else Color.White,
+                                border = BorderStroke(1.dp, if (flipHorizontal) MaterialTheme.colorScheme.primary else SurfaceBorderLight),
+                                shadowElevation = if (flipHorizontal) 2.dp else 1.dp,
+                                modifier = Modifier.size(46.dp)
                             ) {
-                                Icon(Icons.Default.SwapHoriz, contentDescription = "Flip H", tint = Color.White, modifier = Modifier.size(24.dp))
+                                Box(contentAlignment = Alignment.Center) {
+                                    Icon(
+                                        imageVector = Icons.Default.SwapHoriz,
+                                        contentDescription = "Flip Horizontal",
+                                        tint = if (flipHorizontal) Color.White else MaterialTheme.colorScheme.primary,
+                                        modifier = Modifier.size(24.dp)
+                                    )
+                                }
                             }
 
                             // Flip Vertical
-                            IconButton(
+                            Surface(
                                 onClick = onToggleFlipVertical,
-                                modifier = Modifier
-                                    .size(44.dp)
-                                    .clip(CircleShape)
-                                    .background(if (flipVertical) MaterialTheme.colorScheme.primary else Color.Transparent)
+                                shape = RoundedCornerShape(12.dp),
+                                color = if (flipVertical) MaterialTheme.colorScheme.primary else Color.White,
+                                border = BorderStroke(1.dp, if (flipVertical) MaterialTheme.colorScheme.primary else SurfaceBorderLight),
+                                shadowElevation = if (flipVertical) 2.dp else 1.dp,
+                                modifier = Modifier.size(46.dp)
                             ) {
-                                Icon(Icons.Default.SwapVert, contentDescription = "Flip V", tint = Color.White, modifier = Modifier.size(24.dp))
+                                Box(contentAlignment = Alignment.Center) {
+                                    Icon(
+                                        imageVector = Icons.Default.SwapVert,
+                                        contentDescription = "Flip Vertical",
+                                        tint = if (flipVertical) Color.White else MaterialTheme.colorScheme.primary,
+                                        modifier = Modifier.size(24.dp)
+                                    )
+                                }
                             }
                         }
                     }
