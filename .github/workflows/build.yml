@@ -71,31 +71,59 @@ jobs:
       - name: Rename APKs by ABI
         run: |
           mkdir -p output
-          for apk in app/build/outputs/apk/debug/*.apk; do
-            abi=$(basename "$apk" | sed -E 's/app-(.*)-debug\.apk/\1/')
+          shopt -s nullglob
+          apks=(app/build/outputs/apk/debug/*.apk)
+          if [ ${#apks[@]} -eq 0 ]; then
+            echo "No APKs found in app/build/outputs/apk/debug/"
+            exit 1
+          fi
+          for apk in "${apks[@]}"; do
+            base=$(basename "$apk")
+            if [[ "$base" =~ app-(.*)-debug\.apk ]]; then
+              abi="${BASH_REMATCH[1]}"
+            else
+              abi="universal"
+            fi
+            echo "Copying $apk to output/${{ github.event.repository.name }}-${abi}.apk"
             cp "$apk" "output/${{ github.event.repository.name }}-${abi}.apk"
           done
 
       - name: Upload armeabi-v7a
         uses: actions/upload-artifact@v4
+        if: always()
         with:
           name: ${{ github.event.repository.name }}-armeabi-v7a
           path: output/${{ github.event.repository.name }}-armeabi-v7a.apk
+          if-no-files-found: ignore
 
       - name: Upload arm64-v8a
         uses: actions/upload-artifact@v4
+        if: always()
         with:
           name: ${{ github.event.repository.name }}-arm64-v8a
           path: output/${{ github.event.repository.name }}-arm64-v8a.apk
+          if-no-files-found: ignore
 
       - name: Upload x86
         uses: actions/upload-artifact@v4
+        if: always()
         with:
           name: ${{ github.event.repository.name }}-x86
           path: output/${{ github.event.repository.name }}-x86.apk
+          if-no-files-found: ignore
 
       - name: Upload x86_64
         uses: actions/upload-artifact@v4
+        if: always()
         with:
           name: ${{ github.event.repository.name }}-x86_64
           path: output/${{ github.event.repository.name }}-x86_64.apk
+          if-no-files-found: ignore
+
+      - name: Upload All Built APKs
+        uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: ${{ github.event.repository.name }}-all-apks
+          path: output/*.apk
+          if-no-files-found: ignore

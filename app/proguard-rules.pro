@@ -42,9 +42,23 @@
 -dontwarn androidx.compose.**
 -dontwarn androidx.navigation.**
 
+# Firebase & Google Services
+-dontwarn com.google.firebase.**
+-keep class com.google.firebase.** { *; }
+-dontwarn com.google.android.gms.**
+-keep class com.google.android.gms.** { *; }
+-dontwarn androidx.credentials.**
+-keep class androidx.credentials.** { *; }
+
+# Coil
+-dontwarn coil.**
+-keep class coil.** { *; }
+
 # Project Models & Entities
 -keep class com.example.data.** { *; }
 -keep class com.example.util.** { *; }
 -keep class com.example.ui.** { *; }
+-keep class com.example.model.** { *; }
+-keep class com.example.service.** { *; }
 
 
