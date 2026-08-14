@@ -918,14 +918,6 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
                 flipVertical = flipVertical
             )
             _joinVideosList.value = list
-            viewModelScope.launch {
-                val label = buildString {
-                    append("Rotation set to ${normDeg}°")
-                    if (flipHorizontal) append(" • Flip H")
-                    if (flipVertical) append(" • Flip V")
-                }
-                _userMessage.emit("$label (will apply during Join)")
-            }
         }
     }
 

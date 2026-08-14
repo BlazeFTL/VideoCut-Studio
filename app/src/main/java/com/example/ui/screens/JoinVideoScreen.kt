@@ -705,94 +705,83 @@ fun JoinRotateVideoDialog(
                     }
                 }
 
-                // Rotation Controls - Light Aesthetic 4 Buttons
-                Surface(
-                    modifier = Modifier.fillMaxWidth(),
-                    color = Color(0xFFF8FAFC),
-                    shape = RoundedCornerShape(14.dp),
-                    border = BorderStroke(1.dp, SurfaceBorderLight)
+                // Rotation Controls - Clean Modern Buttons
+                Row(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(vertical = 6.dp),
+                    horizontalArrangement = Arrangement.SpaceEvenly,
+                    verticalAlignment = Alignment.CenterVertically
                 ) {
-                    Row(
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .padding(vertical = 10.dp, horizontal = 12.dp),
-                        horizontalArrangement = Arrangement.SpaceEvenly,
-                        verticalAlignment = Alignment.CenterVertically
+                    // CCW (-90)
+                    Surface(
+                        onClick = { rotationDegrees = ((rotationDegrees - 90) % 360 + 360) % 360 },
+                        shape = RoundedCornerShape(14.dp),
+                        color = Color(0xFFF1F5F9),
+                        border = BorderStroke(1.dp, Color(0xFFE2E8F0)),
+                        modifier = Modifier.size(50.dp)
                     ) {
-                        // CCW (-90)
-                        Surface(
-                            onClick = { rotationDegrees = ((rotationDegrees - 90) % 360 + 360) % 360 },
-                            shape = RoundedCornerShape(12.dp),
-                            color = Color.White,
-                            border = BorderStroke(1.dp, SurfaceBorderLight),
-                            shadowElevation = 1.dp,
-                            modifier = Modifier.size(46.dp)
-                        ) {
-                            Box(contentAlignment = Alignment.Center) {
-                                Icon(
-                                    imageVector = Icons.Default.RotateLeft,
-                                    contentDescription = "Rotate CCW (-90°)",
-                                    tint = MaterialTheme.colorScheme.primary,
-                                    modifier = Modifier.size(24.dp)
-                                )
-                            }
+                        Box(contentAlignment = Alignment.Center) {
+                            Icon(
+                                imageVector = Icons.Default.RotateLeft,
+                                contentDescription = "Rotate CCW (-90°)",
+                                tint = MaterialTheme.colorScheme.primary,
+                                modifier = Modifier.size(24.dp)
+                            )
                         }
+                    }
 
-                        // CW (+90)
-                        Surface(
-                            onClick = { rotationDegrees = (rotationDegrees + 90) % 360 },
-                            shape = RoundedCornerShape(12.dp),
-                            color = Color.White,
-                            border = BorderStroke(1.dp, SurfaceBorderLight),
-                            shadowElevation = 1.dp,
-                            modifier = Modifier.size(46.dp)
-                        ) {
-                            Box(contentAlignment = Alignment.Center) {
-                                Icon(
-                                    imageVector = Icons.Default.RotateRight,
-                                    contentDescription = "Rotate CW (+90°)",
-                                    tint = MaterialTheme.colorScheme.primary,
-                                    modifier = Modifier.size(24.dp)
-                                )
-                            }
+                    // CW (+90)
+                    Surface(
+                        onClick = { rotationDegrees = (rotationDegrees + 90) % 360 },
+                        shape = RoundedCornerShape(14.dp),
+                        color = Color(0xFFF1F5F9),
+                        border = BorderStroke(1.dp, Color(0xFFE2E8F0)),
+                        modifier = Modifier.size(50.dp)
+                    ) {
+                        Box(contentAlignment = Alignment.Center) {
+                            Icon(
+                                imageVector = Icons.Default.RotateRight,
+                                contentDescription = "Rotate CW (+90°)",
+                                tint = MaterialTheme.colorScheme.primary,
+                                modifier = Modifier.size(24.dp)
+                            )
                         }
+                    }
 
-                        // Flip H
-                        Surface(
-                            onClick = { flipHorizontal = !flipHorizontal },
-                            shape = RoundedCornerShape(12.dp),
-                            color = if (flipHorizontal) MaterialTheme.colorScheme.primary else Color.White,
-                            border = BorderStroke(1.dp, if (flipHorizontal) MaterialTheme.colorScheme.primary else SurfaceBorderLight),
-                            shadowElevation = if (flipHorizontal) 2.dp else 1.dp,
-                            modifier = Modifier.size(46.dp)
-                        ) {
-                            Box(contentAlignment = Alignment.Center) {
-                                Icon(
-                                    imageVector = Icons.Default.SwapHoriz,
-                                    contentDescription = "Flip Horizontal",
-                                    tint = if (flipHorizontal) Color.White else MaterialTheme.colorScheme.primary,
-                                    modifier = Modifier.size(24.dp)
-                                )
-                            }
+                    // Flip H
+                    Surface(
+                        onClick = { flipHorizontal = !flipHorizontal },
+                        shape = RoundedCornerShape(14.dp),
+                        color = if (flipHorizontal) MaterialTheme.colorScheme.primary else Color(0xFFF1F5F9),
+                        border = BorderStroke(1.dp, if (flipHorizontal) MaterialTheme.colorScheme.primary else Color(0xFFE2E8F0)),
+                        modifier = Modifier.size(50.dp)
+                    ) {
+                        Box(contentAlignment = Alignment.Center) {
+                            Icon(
+                                imageVector = Icons.Default.SwapHoriz,
+                                contentDescription = "Flip Horizontal",
+                                tint = if (flipHorizontal) Color.White else MaterialTheme.colorScheme.primary,
+                                modifier = Modifier.size(24.dp)
+                            )
                         }
+                    }
 
-                        // Flip V
-                        Surface(
-                            onClick = { flipVertical = !flipVertical },
-                            shape = RoundedCornerShape(12.dp),
-                            color = if (flipVertical) MaterialTheme.colorScheme.primary else Color.White,
-                            border = BorderStroke(1.dp, if (flipVertical) MaterialTheme.colorScheme.primary else SurfaceBorderLight),
-                            shadowElevation = if (flipVertical) 2.dp else 1.dp,
-                            modifier = Modifier.size(46.dp)
-                        ) {
-                            Box(contentAlignment = Alignment.Center) {
-                                Icon(
-                                    imageVector = Icons.Default.SwapVert,
-                                    contentDescription = "Flip Vertical",
-                                    tint = if (flipVertical) Color.White else MaterialTheme.colorScheme.primary,
-                                    modifier = Modifier.size(24.dp)
-                                )
-                            }
+                    // Flip V
+                    Surface(
+                        onClick = { flipVertical = !flipVertical },
+                        shape = RoundedCornerShape(14.dp),
+                        color = if (flipVertical) MaterialTheme.colorScheme.primary else Color(0xFFF1F5F9),
+                        border = BorderStroke(1.dp, if (flipVertical) MaterialTheme.colorScheme.primary else Color(0xFFE2E8F0)),
+                        modifier = Modifier.size(50.dp)
+                    ) {
+                        Box(contentAlignment = Alignment.Center) {
+                            Icon(
+                                imageVector = Icons.Default.SwapVert,
+                                contentDescription = "Flip Vertical",
+                                tint = if (flipVertical) Color.White else MaterialTheme.colorScheme.primary,
+                                modifier = Modifier.size(24.dp)
+                            )
                         }
                     }
                 }
@@ -818,7 +807,7 @@ fun JoinRotateVideoDialog(
                         colors = ButtonDefaults.buttonColors(containerColor = MaterialTheme.colorScheme.primary),
                         shape = RoundedCornerShape(12.dp)
                     ) {
-                        Text("Save & Apply", fontSize = 13.sp, fontWeight = FontWeight.Bold)
+                        Text("Save", fontSize = 13.sp, fontWeight = FontWeight.Bold)
                     }
                 }
             }

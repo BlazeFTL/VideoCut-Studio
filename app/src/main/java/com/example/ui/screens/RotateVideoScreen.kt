@@ -238,10 +238,10 @@ fun RotateVideoScreen(
                         }
                     }
 
-                    // Player Toolbar Controls (Directly updates rotation & active segment) - Light Aesthetic
+                    // Player Toolbar Controls (Directly updates rotation & active segment) - Clean Modern Style
                     Surface(
                         modifier = Modifier.fillMaxWidth(),
-                        color = Color(0xFFF8FAFC),
+                        color = Color.White,
                         border = BorderStroke(1.dp, SurfaceBorderLight)
                     ) {
                         Row(
@@ -261,11 +261,10 @@ fun RotateVideoScreen(
                                         onUpdateRotatePart(lastPart.copy(rotationDegrees = target))
                                     }
                                 },
-                                shape = RoundedCornerShape(12.dp),
-                                color = Color.White,
-                                border = BorderStroke(1.dp, SurfaceBorderLight),
-                                shadowElevation = 1.dp,
-                                modifier = Modifier.size(46.dp)
+                                shape = RoundedCornerShape(14.dp),
+                                color = Color(0xFFF1F5F9),
+                                border = BorderStroke(1.dp, Color(0xFFE2E8F0)),
+                                modifier = Modifier.size(50.dp)
                             ) {
                                 Box(contentAlignment = Alignment.Center) {
                                     Icon(
@@ -287,11 +286,10 @@ fun RotateVideoScreen(
                                         onUpdateRotatePart(lastPart.copy(rotationDegrees = target))
                                     }
                                 },
-                                shape = RoundedCornerShape(12.dp),
-                                color = Color.White,
-                                border = BorderStroke(1.dp, SurfaceBorderLight),
-                                shadowElevation = 1.dp,
-                                modifier = Modifier.size(46.dp)
+                                shape = RoundedCornerShape(14.dp),
+                                color = Color(0xFFF1F5F9),
+                                border = BorderStroke(1.dp, Color(0xFFE2E8F0)),
+                                modifier = Modifier.size(50.dp)
                             ) {
                                 Box(contentAlignment = Alignment.Center) {
                                     Icon(
@@ -306,11 +304,10 @@ fun RotateVideoScreen(
                             // Flip Horizontal
                             Surface(
                                 onClick = onToggleFlipHorizontal,
-                                shape = RoundedCornerShape(12.dp),
-                                color = if (flipHorizontal) MaterialTheme.colorScheme.primary else Color.White,
-                                border = BorderStroke(1.dp, if (flipHorizontal) MaterialTheme.colorScheme.primary else SurfaceBorderLight),
-                                shadowElevation = if (flipHorizontal) 2.dp else 1.dp,
-                                modifier = Modifier.size(46.dp)
+                                shape = RoundedCornerShape(14.dp),
+                                color = if (flipHorizontal) MaterialTheme.colorScheme.primary else Color(0xFFF1F5F9),
+                                border = BorderStroke(1.dp, if (flipHorizontal) MaterialTheme.colorScheme.primary else Color(0xFFE2E8F0)),
+                                modifier = Modifier.size(50.dp)
                             ) {
                                 Box(contentAlignment = Alignment.Center) {
                                     Icon(
@@ -325,11 +322,10 @@ fun RotateVideoScreen(
                             // Flip Vertical
                             Surface(
                                 onClick = onToggleFlipVertical,
-                                shape = RoundedCornerShape(12.dp),
-                                color = if (flipVertical) MaterialTheme.colorScheme.primary else Color.White,
-                                border = BorderStroke(1.dp, if (flipVertical) MaterialTheme.colorScheme.primary else SurfaceBorderLight),
-                                shadowElevation = if (flipVertical) 2.dp else 1.dp,
-                                modifier = Modifier.size(46.dp)
+                                shape = RoundedCornerShape(14.dp),
+                                color = if (flipVertical) MaterialTheme.colorScheme.primary else Color(0xFFF1F5F9),
+                                border = BorderStroke(1.dp, if (flipVertical) MaterialTheme.colorScheme.primary else Color(0xFFE2E8F0)),
+                                modifier = Modifier.size(50.dp)
                             ) {
                                 Box(contentAlignment = Alignment.Center) {
                                     Icon(
