@@ -98,14 +98,14 @@ fun TopDashboardBar(
                     Icon(
                         imageVector = Icons.Default.ArrowBack,
                         contentDescription = "Back",
-                        tint = MaterialTheme.colorScheme.onSurface,
+                        tint = MaterialTheme.colorScheme.primary,
                         modifier = Modifier.size(24.dp)
                     )
                 }
             } else {
                 IconButton(onClick = onOpenDrawer) {
                     StaggeredMenuIcon(
-                        tint = MaterialTheme.colorScheme.onSurface,
+                        tint = MaterialTheme.colorScheme.primary,
                         modifier = Modifier.size(20.dp)
                     )
                 }
@@ -117,7 +117,7 @@ fun TopDashboardBar(
                 text = if (isSettings) "App Settings" else "VideoCut Studio",
                 fontWeight = FontWeight.Bold,
                 fontSize = 19.sp,
-                color = MaterialTheme.colorScheme.onSurface
+                color = MaterialTheme.colorScheme.primary
             )
 
             Spacer(modifier = Modifier.weight(1f))
@@ -136,7 +136,7 @@ fun TopDashboardBar(
                     Icon(
                         imageVector = Icons.Outlined.Settings,
                         contentDescription = "Settings",
-                        tint = MaterialTheme.colorScheme.onSurfaceVariant,
+                        tint = MaterialTheme.colorScheme.primary,
                         modifier = Modifier.size(22.dp)
                     )
                 }

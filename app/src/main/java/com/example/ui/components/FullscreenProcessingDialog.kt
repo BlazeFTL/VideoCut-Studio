@@ -29,6 +29,7 @@ import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.LinearProgressIndicator
+import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
@@ -116,7 +117,7 @@ fun FullscreenProcessingDialog(
     ) {
         Surface(
             modifier = Modifier.fillMaxSize(),
-            color = SlateBackground
+            color = MaterialTheme.colorScheme.background
         ) {
             Box(
                 modifier = Modifier
@@ -137,7 +138,7 @@ fun FullscreenProcessingDialog(
                     // 1. Header Title & Process Name
                     if (processName.isNotEmpty()) {
                         Surface(
-                            color = PrimaryContainerLight,
+                            color = MaterialTheme.colorScheme.primaryContainer,
                             shape = RoundedCornerShape(20.dp),
                             modifier = Modifier.padding(bottom = 8.dp)
                         ) {
@@ -145,7 +146,7 @@ fun FullscreenProcessingDialog(
                                 text = processName.uppercase(),
                                 fontSize = 11.sp,
                                 fontWeight = FontWeight.ExtraBold,
-                                color = PrimaryIndigo,
+                                color = MaterialTheme.colorScheme.primary,
                                 letterSpacing = 1.sp,
                                 modifier = Modifier.padding(horizontal = 12.dp, vertical = 6.dp)
                             )
@@ -156,7 +157,7 @@ fun FullscreenProcessingDialog(
                         text = processName.ifEmpty { "Video Processing" },
                         fontSize = 22.sp,
                         fontWeight = FontWeight.ExtraBold,
-                        color = TextPrimaryDark,
+                        color = MaterialTheme.colorScheme.onBackground,
                         textAlign = TextAlign.Center
                     )
 
@@ -164,7 +165,7 @@ fun FullscreenProcessingDialog(
                         text = title.ifEmpty { "0/1 Files Converted" },
                         fontSize = 13.sp,
                         fontWeight = FontWeight.Medium,
-                        color = TextSecondaryMuted,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
                         textAlign = TextAlign.Center,
                         modifier = Modifier.padding(top = 4.dp)
                     )
@@ -179,16 +180,16 @@ fun FullscreenProcessingDialog(
                         CircularProgressIndicator(
                             progress = { safeProgress },
                             modifier = Modifier.fillMaxSize(),
-                            color = PrimaryIndigo,
+                            color = MaterialTheme.colorScheme.primary,
                             strokeWidth = 7.dp,
-                            trackColor = PrimaryContainerLight
+                            trackColor = MaterialTheme.colorScheme.primaryContainer
                         )
 
                         Text(
                             text = "$percentageInt%",
                             fontSize = 28.sp,
                             fontWeight = FontWeight.ExtraBold,
-                            color = TextPrimaryDark
+                            color = MaterialTheme.colorScheme.onBackground
                         )
                     }
 
@@ -208,8 +209,8 @@ fun FullscreenProcessingDialog(
                             .fillMaxWidth()
                             .clip(RoundedCornerShape(16.dp)),
                         shape = RoundedCornerShape(16.dp),
-                        colors = CardDefaults.cardColors(containerColor = Color.White),
-                        border = BorderStroke(1.dp, SurfaceBorderLight),
+                        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
+                        border = BorderStroke(1.dp, MaterialTheme.colorScheme.outline.copy(alpha = 0.6f)),
                         elevation = CardDefaults.cardElevation(defaultElevation = 2.dp)
                     ) {
                         Column(modifier = Modifier.fillMaxWidth()) {
@@ -262,7 +263,7 @@ fun FullscreenProcessingDialog(
                                         text = itemTitle,
                                         fontSize = 14.sp,
                                         fontWeight = FontWeight.SemiBold,
-                                        color = TextPrimaryDark,
+                                        color = MaterialTheme.colorScheme.onSurface,
                                         maxLines = 1,
                                         overflow = TextOverflow.Ellipsis
                                     )
@@ -276,34 +277,34 @@ fun FullscreenProcessingDialog(
                                     ) {
                                         Box(
                                             modifier = Modifier
-                                                .background(PrimaryContainerLight, RoundedCornerShape(4.dp))
+                                                .background(MaterialTheme.colorScheme.primaryContainer, RoundedCornerShape(4.dp))
                                                 .padding(horizontal = 6.dp, vertical = 2.dp)
                                         ) {
                                             Text(
                                                 text = "MP4",
                                                 fontSize = 11.sp,
                                                 fontWeight = FontWeight.SemiBold,
-                                                color = PrimaryIndigo
+                                                color = MaterialTheme.colorScheme.primary
                                             )
                                         }
 
                                         Icon(
                                             imageVector = Icons.Default.ChevronRight,
                                             contentDescription = null,
-                                            tint = TextSecondaryMuted,
+                                            tint = MaterialTheme.colorScheme.onSurfaceVariant,
                                             modifier = Modifier.size(14.dp)
                                         )
 
                                         Box(
                                             modifier = Modifier
-                                                .background(PrimaryContainerLight, RoundedCornerShape(4.dp))
+                                                .background(MaterialTheme.colorScheme.primaryContainer, RoundedCornerShape(4.dp))
                                                 .padding(horizontal = 6.dp, vertical = 2.dp)
                                         ) {
                                             Text(
                                                 text = "MP4",
                                                 fontSize = 11.sp,
                                                 fontWeight = FontWeight.SemiBold,
-                                                color = PrimaryIndigo
+                                                color = MaterialTheme.colorScheme.primary
                                             )
                                         }
                                     }
@@ -313,7 +314,7 @@ fun FullscreenProcessingDialog(
                                     Text(
                                         text = "$itemSizeStr • $durationStr • ($percentageInt%)",
                                         fontSize = 12.sp,
-                                        color = TextSecondaryMuted
+                                        color = MaterialTheme.colorScheme.onSurfaceVariant
                                     )
                                 }
 
@@ -328,7 +329,7 @@ fun FullscreenProcessingDialog(
                                         Icon(
                                             imageVector = Icons.Default.Close,
                                             contentDescription = "Cancel Processing",
-                                            tint = TextSecondaryMuted,
+                                            tint = MaterialTheme.colorScheme.onSurfaceVariant,
                                             modifier = Modifier.size(20.dp)
                                         )
                                     }
@@ -341,21 +342,21 @@ fun FullscreenProcessingDialog(
                                 modifier = Modifier
                                     .fillMaxWidth()
                                     .height(3.dp),
-                                color = PrimaryIndigo,
-                                trackColor = PrimaryContainerLight
+                                color = MaterialTheme.colorScheme.primary,
+                                trackColor = MaterialTheme.colorScheme.primaryContainer
                             )
                         }
                     }
 
                     Spacer(modifier = Modifier.height(32.dp))
 
-                    // 4. Cancel Processing Button Below Progress
+                    // 4. Cancel Processing Button Below Progress (Themed)
                     if (onCancel != null) {
                         Surface(
                             onClick = onCancel,
                             shape = RoundedCornerShape(14.dp),
-                            color = Color(0xFFFFF1F2),
-                            border = BorderStroke(1.dp, RoseError.copy(alpha = 0.4f)),
+                            color = MaterialTheme.colorScheme.primaryContainer.copy(alpha = 0.5f),
+                            border = BorderStroke(1.5.dp, MaterialTheme.colorScheme.primary),
                             modifier = Modifier
                                 .fillMaxWidth()
                                 .height(50.dp)
@@ -368,7 +369,7 @@ fun FullscreenProcessingDialog(
                                 Icon(
                                     imageVector = Icons.Default.Close,
                                     contentDescription = null,
-                                    tint = RoseError,
+                                    tint = MaterialTheme.colorScheme.primary,
                                     modifier = Modifier.size(18.dp)
                                 )
                                 Spacer(modifier = Modifier.width(8.dp))
@@ -376,7 +377,7 @@ fun FullscreenProcessingDialog(
                                     text = "Cancel Processing",
                                     fontSize = 14.sp,
                                     fontWeight = FontWeight.Bold,
-                                    color = RoseError
+                                    color = MaterialTheme.colorScheme.primary
                                 )
                             }
                         }

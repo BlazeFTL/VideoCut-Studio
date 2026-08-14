@@ -896,7 +896,7 @@ private fun VideoListRowItem(
                     Icon(
                         imageVector = Icons.Default.MoreVert,
                         contentDescription = "Options",
-                        tint = TextSecondaryMuted
+                        tint = MaterialTheme.colorScheme.primary
                     )
                 }
 

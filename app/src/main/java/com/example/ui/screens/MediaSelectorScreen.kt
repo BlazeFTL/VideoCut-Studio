@@ -447,7 +447,7 @@ private fun DeviceVideoRowItem(
             // Options Action Menu
             Box {
                 IconButton(onClick = { isMenuExpanded = true }) {
-                    Icon(Icons.Default.MoreVert, contentDescription = "Options", tint = TextSecondaryMuted)
+                    Icon(Icons.Default.MoreVert, contentDescription = "Options", tint = MaterialTheme.colorScheme.primary)
                 }
 
                 DropdownMenu(
