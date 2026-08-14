@@ -61,8 +61,6 @@ import com.example.model.RotatePart
 import com.example.model.VideoItem
 import com.example.ui.components.FullscreenProcessingDialog
 import com.example.ui.components.VideoPlayerView
-import com.example.ui.theme.PrimaryContainerLight
-import com.example.ui.theme.PrimaryIndigo
 import com.example.ui.theme.SurfaceBorderLight
 import com.example.ui.theme.TextPrimaryDark
 import com.example.ui.theme.TextSecondaryMuted

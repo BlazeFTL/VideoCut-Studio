@@ -48,8 +48,6 @@ import com.example.data.ProcessedVideoEntity
 import com.example.ui.theme.CyanContainer
 import com.example.ui.theme.EmeraldContainer
 import com.example.ui.theme.EmeraldSuccess
-import com.example.ui.theme.PrimaryContainerLight
-import com.example.ui.theme.PrimaryIndigo
 import com.example.ui.theme.RoseError
 import com.example.ui.theme.SecondaryContainerLight
 import com.example.ui.theme.SecondaryViolet

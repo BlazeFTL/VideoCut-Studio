@@ -64,8 +64,6 @@ import androidx.compose.ui.unit.sp
 import com.example.ui.MediaSortType
 import com.example.ui.MediaViewMode
 import com.example.ui.NavigationTab
-import com.example.ui.theme.PrimaryContainerLight
-import com.example.ui.theme.PrimaryIndigo
 import com.example.ui.theme.SurfaceBorderLight
 import com.example.ui.theme.TextPrimaryDark
 import com.example.ui.theme.TextSecondaryMuted
@@ -161,12 +159,12 @@ fun MediaSelectorScreen(
                     },
                     modifier = Modifier
                         .clip(CircleShape)
-                        .background(PrimaryContainerLight)
+                        .background(MaterialTheme.colorScheme.primaryContainer)
                 ) {
                     Icon(
                         imageVector = if (viewMode == MediaViewMode.FILES) Icons.Default.Folder else Icons.Default.ViewList,
                         contentDescription = "Toggle View Mode",
-                        tint = PrimaryIndigo,
+                        tint = MaterialTheme.colorScheme.primary,
                         modifier = Modifier.size(20.dp)
                     )
                 }
@@ -179,12 +177,12 @@ fun MediaSelectorScreen(
                         onClick = { isSortMenuExpanded = true },
                         modifier = Modifier
                             .clip(CircleShape)
-                            .background(PrimaryContainerLight)
+                            .background(MaterialTheme.colorScheme.primaryContainer)
                     ) {
                         Icon(
                             imageVector = Icons.Default.Sort,
                             contentDescription = "Sort Options",
-                            tint = PrimaryIndigo,
+                            tint = MaterialTheme.colorScheme.primary,
                             modifier = Modifier.size(20.dp)
                         )
                     }
@@ -226,14 +224,14 @@ fun MediaSelectorScreen(
             Row(
                 modifier = Modifier
                     .clip(RoundedCornerShape(8.dp))
-                    .background(PrimaryContainerLight)
+                    .background(MaterialTheme.colorScheme.primaryContainer)
                     .clickable { selectedFolderFilter = null }
                     .padding(horizontal = 10.dp, vertical = 6.dp),
                 verticalAlignment = Alignment.CenterVertically
             ) {
-                Icon(Icons.Default.Folder, contentDescription = null, tint = PrimaryIndigo, modifier = Modifier.size(16.dp))
+                Icon(Icons.Default.Folder, contentDescription = null, tint = MaterialTheme.colorScheme.primary, modifier = Modifier.size(16.dp))
                 Spacer(modifier = Modifier.width(6.dp))
-                Text("Folder: $selectedFolderFilter  ✕ Clear Filter", fontSize = 12.sp, fontWeight = FontWeight.Bold, color = PrimaryIndigo)
+                Text("Folder: $selectedFolderFilter  ✕ Clear Filter", fontSize = 12.sp, fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.primary)
             }
         }
 
@@ -267,13 +265,13 @@ fun MediaSelectorScreen(
                                 modifier = Modifier
                                     .size(44.dp)
                                     .clip(RoundedCornerShape(10.dp))
-                                    .background(PrimaryContainerLight),
+                                    .background(MaterialTheme.colorScheme.primaryContainer),
                                 contentAlignment = Alignment.Center
                             ) {
                                 Icon(
                                     imageVector = Icons.Default.Folder,
                                     contentDescription = null,
-                                    tint = PrimaryIndigo,
+                                    tint = MaterialTheme.colorScheme.primary,
                                     modifier = Modifier.size(24.dp)
                                 )
                             }
@@ -389,13 +387,13 @@ private fun DeviceVideoRowItem(
                 modifier = Modifier
                     .size(64.dp, 64.dp)
                     .clip(RoundedCornerShape(8.dp))
-                    .background(PrimaryContainerLight),
+                    .background(MaterialTheme.colorScheme.primaryContainer),
                 contentAlignment = Alignment.Center
             ) {
                 Icon(
                     imageVector = Icons.Outlined.Movie,
                     contentDescription = null,
-                    tint = PrimaryIndigo,
+                    tint = MaterialTheme.colorScheme.primary,
                     modifier = Modifier.size(26.dp)
                 )
 

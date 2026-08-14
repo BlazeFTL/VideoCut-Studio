@@ -49,7 +49,6 @@ import com.example.ui.theme.TextPrimaryDark
 import com.example.ui.theme.TextSecondaryMuted
 
 import androidx.compose.runtime.saveable.rememberSaveable
-import com.example.ui.theme.PrimaryIndigo
 
 private val wittyGreetings = listOf(
     "Welcome, Master" to "What can I do for you today?",

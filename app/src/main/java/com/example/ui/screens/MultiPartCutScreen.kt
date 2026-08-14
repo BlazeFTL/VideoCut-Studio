@@ -82,8 +82,6 @@ import com.example.ui.components.VideoPlayerView
 import com.example.ui.theme.CyanContainer
 import com.example.ui.theme.EmeraldContainer
 import com.example.ui.theme.EmeraldSuccess
-import com.example.ui.theme.PrimaryContainerLight
-import com.example.ui.theme.PrimaryIndigo
 import com.example.ui.theme.RoseContainer
 import com.example.ui.theme.RoseError
 import com.example.ui.theme.SecondaryViolet
@@ -186,8 +184,8 @@ fun MultiPartCutScreen(
                     ) {
                         Surface(
                             onClick = { onSetMode(MultiPartCutMode.REMOVE_SELECTED) },
-                            color = if (mode == MultiPartCutMode.REMOVE_SELECTED) PrimaryContainerLight else Color.White,
-                            border = BorderStroke(1.5.dp, if (mode == MultiPartCutMode.REMOVE_SELECTED) PrimaryIndigo else SurfaceBorderLight),
+                            color = if (mode == MultiPartCutMode.REMOVE_SELECTED) MaterialTheme.colorScheme.primaryContainer else Color.White,
+                            border = BorderStroke(1.5.dp, if (mode == MultiPartCutMode.REMOVE_SELECTED) MaterialTheme.colorScheme.primary else SurfaceBorderLight),
                             shape = RoundedCornerShape(10.dp),
                             modifier = Modifier.weight(1f)
                         ) {
@@ -324,7 +322,7 @@ fun MultiPartCutScreen(
                                     text = "${VideoProcessor.formatDurationPrecise(builderStartMs)} - ${VideoProcessor.formatDurationPrecise(builderEndMs)} (${VideoProcessor.formatDurationPrecise((builderEndMs - builderStartMs).coerceAtLeast(0L))})",
                                     fontSize = 12.sp,
                                     fontWeight = FontWeight.ExtraBold,
-                                    color = PrimaryIndigo
+                                    color = MaterialTheme.colorScheme.primary
                                 )
                             }
 
@@ -406,7 +404,7 @@ fun MultiPartCutScreen(
                                         modifier = Modifier
                                             .fillMaxHeight()
                                             .weight((segEndRatio - segStartRatio).coerceAtLeast(0.0001f))
-                                            .background(PrimaryIndigo.copy(alpha = 0.6f))
+                                            .background(activeColor.copy(alpha = 0.6f))
                                             .border(1.dp, Color.White.copy(alpha = 0.6f)),
                                         contentAlignment = Alignment.Center
                                     ) {
@@ -718,7 +716,7 @@ fun MultiPartCutScreen(
                             horizontalArrangement = Arrangement.SpaceBetween
                         ) {
                             Text("00:00.000", fontSize = 10.sp, color = TextSecondaryMuted)
-                            Text("Active Segments: ${segments.size}", fontSize = 10.sp, fontWeight = FontWeight.Bold, color = PrimaryIndigo)
+                            Text("Active Segments: ${segments.size}", fontSize = 10.sp, fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.primary)
                             Text(VideoProcessor.formatDuration(maxDurationMs), fontSize = 10.sp, color = TextSecondaryMuted)
                         }
                     }

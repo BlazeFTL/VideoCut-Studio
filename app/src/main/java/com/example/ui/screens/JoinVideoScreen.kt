@@ -82,9 +82,6 @@ import androidx.compose.ui.unit.sp
 import com.example.model.VideoItem
 import com.example.ui.JoinSortOption
 import com.example.ui.theme.EmeraldSuccess
-import com.example.ui.theme.OnPrimaryContainerDark
-import com.example.ui.theme.PrimaryContainerLight
-import com.example.ui.theme.PrimaryIndigo
 import com.example.ui.theme.SurfaceBorderLight
 import com.example.ui.theme.TextPrimaryDark
 import com.example.ui.theme.TextSecondaryMuted
@@ -503,15 +500,15 @@ fun JoinVideoScreen(
                                         Box(
                                             modifier = Modifier
                                                 .clip(RoundedCornerShape(6.dp))
-                                                .background(PrimaryContainerLight)
-                                                .border(0.5.dp, PrimaryIndigo.copy(alpha = 0.3f), RoundedCornerShape(6.dp))
+                                                .background(MaterialTheme.colorScheme.primaryContainer)
+                                                .border(0.5.dp, MaterialTheme.colorScheme.primary.copy(alpha = 0.4f), RoundedCornerShape(6.dp))
                                                 .padding(horizontal = 6.dp, vertical = 2.dp)
                                         ) {
                                             Text(
                                                 text = "🔄 $transformLabel",
                                                 fontSize = 10.sp,
                                                 fontWeight = FontWeight.Bold,
-                                                color = OnPrimaryContainerDark
+                                                color = MaterialTheme.colorScheme.primary
                                             )
                                         }
                                     }
@@ -548,12 +545,12 @@ fun JoinVideoScreen(
                                 modifier = Modifier
                                     .size(34.dp)
                                     .clip(RoundedCornerShape(8.dp))
-                                    .background(if (hasItemTransform) PrimaryContainerLight else Color.Transparent)
+                                    .background(if (hasItemTransform) MaterialTheme.colorScheme.primaryContainer else Color.Transparent)
                             ) {
                                 Icon(
                                     imageVector = Icons.Default.RotateRight,
                                     contentDescription = "Rotate Video",
-                                    tint = if (hasItemTransform) PrimaryIndigo else MaterialTheme.colorScheme.primary,
+                                    tint = MaterialTheme.colorScheme.primary,
                                     modifier = Modifier.size(20.dp)
                                 )
                             }

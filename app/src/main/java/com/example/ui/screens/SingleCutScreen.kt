@@ -75,8 +75,6 @@ import androidx.compose.ui.unit.sp
 import androidx.compose.ui.viewinterop.AndroidView
 import com.example.model.VideoItem
 import com.example.ui.theme.EmeraldSuccess
-import com.example.ui.theme.PrimaryContainerLight
-import com.example.ui.theme.PrimaryIndigo
 import com.example.ui.theme.RoseError
 import com.example.ui.theme.SecondaryViolet
 import com.example.ui.theme.SurfaceBorderLight

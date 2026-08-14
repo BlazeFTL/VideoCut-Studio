@@ -54,8 +54,6 @@ import androidx.compose.ui.window.Dialog
 import androidx.compose.ui.window.DialogProperties
 import coil.compose.AsyncImage
 import com.example.model.VideoItem
-import com.example.ui.theme.PrimaryContainerLight
-import com.example.ui.theme.PrimaryIndigo
 import com.example.ui.theme.RoseError
 import com.example.ui.theme.SlateBackground
 import com.example.ui.theme.SurfaceBorderLight

@@ -51,8 +51,6 @@ import com.example.model.CompressionMethod
 import com.example.model.VideoItem
 import com.example.ui.components.FullscreenProcessingDialog
 import com.example.ui.theme.EmeraldSuccess
-import com.example.ui.theme.PrimaryContainerLight
-import com.example.ui.theme.PrimaryIndigo
 import com.example.ui.theme.SecondaryViolet
 import com.example.ui.theme.SurfaceBorderLight
 import com.example.ui.theme.TextPrimaryDark
@@ -127,7 +125,7 @@ fun CompressorScreen(
                     Icon(
                         imageVector = Icons.Default.Compress,
                         contentDescription = null,
-                        tint = PrimaryIndigo,
+                        tint = MaterialTheme.colorScheme.primary,
                         modifier = Modifier.size(28.dp)
                     )
                     Text(

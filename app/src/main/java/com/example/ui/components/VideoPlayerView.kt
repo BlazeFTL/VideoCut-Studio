@@ -66,7 +66,6 @@ import androidx.media3.common.util.UnstableApi
 import androidx.media3.exoplayer.ExoPlayer
 import androidx.media3.ui.AspectRatioFrameLayout
 import androidx.media3.ui.PlayerView
-import com.example.ui.theme.PrimaryIndigo
 import com.example.util.VideoProcessor
 import kotlinx.coroutines.delay
 
@@ -452,7 +451,7 @@ private fun VideoPlayerContent(
                                 Icon(
                                     imageVector = if (isPlaying) Icons.Default.Pause else Icons.Default.PlayArrow,
                                     contentDescription = "Play/Pause",
-                                    tint = PrimaryIndigo,
+                                    tint = MaterialTheme.colorScheme.primary,
                                     modifier = Modifier.size(34.dp)
                                 )
                             }
@@ -517,8 +516,8 @@ private fun VideoPlayerContent(
                         },
                         valueRange = 0f..safeTotalDurationMs.toFloat().coerceAtLeast(1f),
                         colors = SliderDefaults.colors(
-                            thumbColor = PrimaryIndigo,
-                            activeTrackColor = PrimaryIndigo,
+                            thumbColor = MaterialTheme.colorScheme.primary,
+                            activeTrackColor = MaterialTheme.colorScheme.primary,
                             inactiveTrackColor = Color.White.copy(alpha = 0.4f)
                         ),
                         modifier = Modifier
