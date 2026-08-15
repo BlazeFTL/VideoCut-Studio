@@ -52,9 +52,22 @@ No upload. No cloud processing. Everything runs locally via MediaCodec & FFmpeg.
 <br>
 
 ## 📸 Screenshots
+<details><summary>ScreenShot</summary>
+<p>
+
+<img width="702" height="1560" alt="Screenshot_20260815-144500_Spark Launcher" src="https://github.com/user-attachments/assets/5eb02805-f430-48af-b9d7-e14e3d160e1a" />
+<img width="702" height="1560" alt="Screenshot_20260815-144606_Spark Launcher" src="https://github.com/user-attachments/assets/8996cf3d-5c82-4f94-8f46-fb64a0cafcab" />
+<img width="702" height="1560" alt="Screenshot_20260815-144602_Spark Launcher" src="https://github.com/user-attachments/assets/c383aa84-17a6-4085-9dad-03eef688f459" />
+<img width="702" height="1560" alt="Screenshot_20260815-144555_Spark Launcher" src="https://github.com/user-attachments/assets/68a9be1c-ca92-4980-8dbe-d0f5745189a8" />
+<img width="702" height="1560" alt="Screenshot_20260815-144552_Spark Launcher" src="https://github.com/user-attachments/assets/cd51ec0e-76b4-48fc-947b-030c5ca23264" />
+<img width="702" height="1560" alt="Screenshot_20260815-144542_Spark Launcher" src="https://github.com/user-attachments/assets/c37a42bb-a32d-4300-b97d-18cacb65bb62" />
+<img width="702" height="1560" alt="Screenshot_20260815-144533_Spark Launcher" src="https://github.com/user-attachments/assets/2365caf5-ae37-44b1-be6d-8ac8070cf5b3" />
+<img width="702" height="1560" alt="Screenshot_20260815-144517_Spark Launcher" src="https://github.com/user-attachments/assets/a596592b-b46d-463a-a4e2-f0719e2338b5" />
+<img width="702" height="1560" alt="Screenshot_20260815-144456_Spark Launcher" src="https://github.com/user-attachments/assets/cfdaf4b2-db2a-4391-8701-f3a3e484ca22" />
 
 
-*(drop images into `docs/screenshots/` and update paths)*
+</p>
+</details>
 
 <br>
 
@@ -69,5 +82,3 @@ Open in Android Studio → build → run.
 <br>
 
 ## 📄 License
-
-_Add license here._
