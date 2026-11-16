@@ -1,5 +1,6 @@
 package com.example.ui.components
 
+import androidx.compose.animation.core.animateFloatAsState
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
@@ -15,6 +16,7 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.systemBarsPadding
 import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.layout.widthIn
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
@@ -22,15 +24,16 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.ChevronRight
 import androidx.compose.material.icons.filled.Close
 import androidx.compose.material.icons.filled.Movie
-import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
-import androidx.compose.material3.CircularProgressIndicator
+import androidx.compose.material3.CircularWavyProgressIndicator
+import androidx.compose.material3.ExperimentalMaterial3ExpressiveApi
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
-import androidx.compose.material3.LinearProgressIndicator
+import androidx.compose.material3.LinearWavyProgressIndicator
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedButton
+import androidx.compose.material3.ProgressIndicatorDefaults
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
@@ -45,6 +48,7 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.asImageBitmap
 import androidx.compose.ui.layout.ContentScale
+import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
@@ -54,13 +58,10 @@ import androidx.compose.ui.window.Dialog
 import androidx.compose.ui.window.DialogProperties
 import coil.compose.AsyncImage
 import com.example.model.VideoItem
-import com.example.ui.theme.RoseError
-import com.example.ui.theme.SlateBackground
-import com.example.ui.theme.SurfaceBorderLight
-import com.example.ui.theme.TextPrimaryDark
-import com.example.ui.theme.TextSecondaryMuted
+import com.example.ui.theme.AppMonoFontFamily
 import kotlinx.coroutines.delay
 
+@OptIn(ExperimentalMaterial3ExpressiveApi::class)
 @Composable
 fun FullscreenProcessingDialog(
     isProcessing: Boolean,
@@ -84,8 +85,13 @@ fun FullscreenProcessingDialog(
         }
     }
 
-    val safeProgress = progress.coerceIn(0.01f, 1f)
-    val percentageInt = (safeProgress * 100).toInt()
+    val safeProgress = progress.coerceIn(0f, 1f)
+    val animatedProgress by animateFloatAsState(
+        targetValue = safeProgress,
+        animationSpec = ProgressIndicatorDefaults.ProgressAnimationSpec,
+        label = "processing_progress"
+    )
+    val percentageInt = (safeProgress * 100).toInt().coerceIn(0, 100)
 
     fun formatSecondsMs(ms: Long): String {
         val totalSec = (ms / 1000).coerceAtLeast(0L)
@@ -95,12 +101,12 @@ fun FullscreenProcessingDialog(
     }
 
     fun formatFileSize(sizeBytes: Long): String {
-        if (sizeBytes <= 0) return "768 kB"
+        if (sizeBytes <= 0) return "--"
         val kb = sizeBytes / 1024.0
         val mb = kb / 1024.0
         return when {
             mb >= 1.0 -> String.format(java.util.Locale.US, "%.1f MB", mb)
-            else -> String.format(java.util.Locale.US, "%.0f kB", kb)
+            else -> String.format(java.util.Locale.US, "%.0f KB", kb)
         }
     }
 
@@ -125,6 +131,7 @@ fun FullscreenProcessingDialog(
             ) {
                 Column(
                     modifier = Modifier
+                        .widthIn(max = 540.dp)
                         .fillMaxSize()
                         .verticalScroll(rememberScrollState())
                         .padding(horizontal = 24.dp, vertical = 32.dp),
@@ -133,27 +140,26 @@ fun FullscreenProcessingDialog(
                 ) {
                     Spacer(modifier = Modifier.height(16.dp))
 
-                    // 1. Header Title & Process Name
                     if (processName.isNotEmpty()) {
                         Surface(
                             color = MaterialTheme.colorScheme.primaryContainer,
-                            shape = RoundedCornerShape(20.dp),
-                            modifier = Modifier.padding(bottom = 8.dp)
+                            shape = RoundedCornerShape(50),
+                            modifier = Modifier.padding(bottom = 10.dp)
                         ) {
                             Text(
                                 text = processName.uppercase(),
-                                fontSize = 11.sp,
+                                style = MaterialTheme.typography.labelMedium,
                                 fontWeight = FontWeight.ExtraBold,
-                                color = MaterialTheme.colorScheme.primary,
+                                color = MaterialTheme.colorScheme.onPrimaryContainer,
                                 letterSpacing = 1.sp,
-                                modifier = Modifier.padding(horizontal = 12.dp, vertical = 6.dp)
+                                modifier = Modifier.padding(horizontal = 14.dp, vertical = 6.dp)
                             )
                         }
                     }
 
                     Text(
                         text = processName.ifEmpty { "Video Processing" },
-                        fontSize = 22.sp,
+                        style = MaterialTheme.typography.headlineMedium,
                         fontWeight = FontWeight.ExtraBold,
                         color = MaterialTheme.colorScheme.onBackground,
                         textAlign = TextAlign.Center
@@ -161,8 +167,7 @@ fun FullscreenProcessingDialog(
 
                     Text(
                         text = title.ifEmpty { "0/1 Files Converted" },
-                        fontSize = 13.sp,
-                        fontWeight = FontWeight.Medium,
+                        style = MaterialTheme.typography.bodyMedium,
                         color = MaterialTheme.colorScheme.onSurfaceVariant,
                         textAlign = TextAlign.Center,
                         modifier = Modifier.padding(top = 4.dp)
@@ -170,60 +175,62 @@ fun FullscreenProcessingDialog(
 
                     Spacer(modifier = Modifier.height(36.dp))
 
-                    // 2. Compact Circular Progress Ring
+                    // Expressive Wavy Circular Progress Hero starting cleanly from 0%
                     Box(
-                        modifier = Modifier.size(116.dp),
+                        modifier = Modifier.size(164.dp),
                         contentAlignment = Alignment.Center
                     ) {
-                        CircularProgressIndicator(
-                            progress = { safeProgress },
+                        CircularWavyProgressIndicator(
+                            progress = { animatedProgress },
                             modifier = Modifier.fillMaxSize(),
                             color = MaterialTheme.colorScheme.primary,
-                            strokeWidth = 7.dp,
                             trackColor = MaterialTheme.colorScheme.primaryContainer
                         )
 
-                        Text(
-                            text = "$percentageInt%",
-                            fontSize = 28.sp,
-                            fontWeight = FontWeight.ExtraBold,
-                            color = MaterialTheme.colorScheme.onBackground
-                        )
+                        Column(horizontalAlignment = Alignment.CenterHorizontally) {
+                            Text(
+                                text = "$percentageInt%",
+                                style = MaterialTheme.typography.displaySmall.copy(fontFamily = AppMonoFontFamily),
+                                fontWeight = FontWeight.ExtraBold,
+                                color = MaterialTheme.colorScheme.onBackground,
+                                modifier = Modifier.testTag("processing_percentage_text")
+                            )
+                            Text(
+                                text = formatSecondsMs(elapsedMs),
+                                style = MaterialTheme.typography.labelMedium,
+                                color = MaterialTheme.colorScheme.onSurfaceVariant
+                            )
+                        }
                     }
 
-                    Spacer(modifier = Modifier.height(44.dp))
+                    Spacer(modifier = Modifier.height(40.dp))
 
-                    // 3. Video File Processing Item Card
                     val itemTitle = videoItem?.title ?: statusMessage.ifEmpty { "Video Processing..." }
                     val itemSizeStr = formatFileSize(videoItem?.sizeBytes ?: 0L)
                     val durationStr = if ((videoItem?.durationMs ?: 0L) > 0) {
-                        "${formatSecondsMs(elapsedMs)}/${formatSecondsMs(videoItem?.durationMs ?: 0L)}"
+                        "${formatSecondsMs(elapsedMs)} / ${formatSecondsMs(videoItem?.durationMs ?: 0L)}"
                     } else {
                         formatSecondsMs(elapsedMs)
                     }
 
                     Card(
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .clip(RoundedCornerShape(16.dp)),
-                        shape = RoundedCornerShape(16.dp),
-                        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
-                        border = BorderStroke(1.dp, MaterialTheme.colorScheme.outline.copy(alpha = 0.6f)),
-                        elevation = CardDefaults.cardElevation(defaultElevation = 2.dp)
+                        modifier = Modifier.fillMaxWidth(),
+                        shape = RoundedCornerShape(24.dp),
+                        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceContainerLow),
+                        border = BorderStroke(1.dp, MaterialTheme.colorScheme.outlineVariant)
                     ) {
                         Column(modifier = Modifier.fillMaxWidth()) {
                             Row(
                                 modifier = Modifier
                                     .fillMaxWidth()
-                                    .padding(14.dp),
+                                    .padding(16.dp),
                                 verticalAlignment = Alignment.CenterVertically
                             ) {
-                                // Video Thumbnail
                                 Box(
                                     modifier = Modifier
                                         .size(56.dp)
-                                        .clip(RoundedCornerShape(10.dp))
-                                        .background(Color(0xFF1E293B)),
+                                        .clip(RoundedCornerShape(14.dp))
+                                        .background(MaterialTheme.colorScheme.surfaceContainerHigh),
                                     contentAlignment = Alignment.Center
                                 ) {
                                     if (videoItem?.thumbnail != null) {
@@ -243,46 +250,44 @@ fun FullscreenProcessingDialog(
                                     } else {
                                         Icon(
                                             imageVector = Icons.Default.Movie,
-                                            contentDescription = null,
-                                            tint = Color.White.copy(alpha = 0.8f),
+                                            contentDescription = "Video icon",
+                                            tint = MaterialTheme.colorScheme.onSurfaceVariant,
                                             modifier = Modifier.size(28.dp)
                                         )
                                     }
                                 }
 
-                                Spacer(modifier = Modifier.width(12.dp))
+                                Spacer(modifier = Modifier.width(14.dp))
 
-                                // Details Column
                                 Column(
                                     modifier = Modifier.weight(1f),
                                     verticalArrangement = Arrangement.Center
                                 ) {
                                     Text(
                                         text = itemTitle,
-                                        fontSize = 14.sp,
-                                        fontWeight = FontWeight.SemiBold,
+                                        style = MaterialTheme.typography.titleSmall,
+                                        fontWeight = FontWeight.Bold,
                                         color = MaterialTheme.colorScheme.onSurface,
                                         maxLines = 1,
                                         overflow = TextOverflow.Ellipsis
                                     )
 
-                                    Spacer(modifier = Modifier.height(4.dp))
+                                    Spacer(modifier = Modifier.height(6.dp))
 
-                                    // Format badges
                                     Row(
                                         verticalAlignment = Alignment.CenterVertically,
                                         horizontalArrangement = Arrangement.spacedBy(4.dp)
                                     ) {
                                         Box(
                                             modifier = Modifier
-                                                .background(MaterialTheme.colorScheme.primaryContainer, RoundedCornerShape(4.dp))
+                                                .background(MaterialTheme.colorScheme.primaryContainer, RoundedCornerShape(6.dp))
                                                 .padding(horizontal = 6.dp, vertical = 2.dp)
                                         ) {
                                             Text(
                                                 text = "MP4",
-                                                fontSize = 11.sp,
-                                                fontWeight = FontWeight.SemiBold,
-                                                color = MaterialTheme.colorScheme.primary
+                                                style = MaterialTheme.typography.labelSmall,
+                                                fontWeight = FontWeight.Bold,
+                                                color = MaterialTheme.colorScheme.onPrimaryContainer
                                             )
                                         }
 
@@ -295,34 +300,33 @@ fun FullscreenProcessingDialog(
 
                                         Box(
                                             modifier = Modifier
-                                                .background(MaterialTheme.colorScheme.primaryContainer, RoundedCornerShape(4.dp))
+                                                .background(MaterialTheme.colorScheme.secondaryContainer, RoundedCornerShape(6.dp))
                                                 .padding(horizontal = 6.dp, vertical = 2.dp)
                                         ) {
                                             Text(
                                                 text = "MP4",
-                                                fontSize = 11.sp,
-                                                fontWeight = FontWeight.SemiBold,
-                                                color = MaterialTheme.colorScheme.primary
+                                                style = MaterialTheme.typography.labelSmall,
+                                                fontWeight = FontWeight.Bold,
+                                                color = MaterialTheme.colorScheme.onSecondaryContainer
                                             )
                                         }
                                     }
 
-                                    Spacer(modifier = Modifier.height(4.dp))
+                                    Spacer(modifier = Modifier.height(6.dp))
 
                                     Text(
                                         text = "$itemSizeStr • $durationStr • ($percentageInt%)",
-                                        fontSize = 12.sp,
+                                        style = MaterialTheme.typography.bodySmall,
                                         color = MaterialTheme.colorScheme.onSurfaceVariant
                                     )
                                 }
 
-                                Spacer(modifier = Modifier.width(8.dp))
-
-                                // Cancel Close Button on Item Card
                                 if (onCancel != null) {
                                     IconButton(
                                         onClick = onCancel,
-                                        modifier = Modifier.size(32.dp)
+                                        modifier = Modifier
+                                            .size(48.dp)
+                                            .testTag("dialog_close_cancel_button")
                                     ) {
                                         Icon(
                                             imageVector = Icons.Default.Close,
@@ -334,50 +338,41 @@ fun FullscreenProcessingDialog(
                                 }
                             }
 
-                            // Linear Progress Line
-                            LinearProgressIndicator(
-                                progress = { safeProgress },
+                            LinearWavyProgressIndicator(
+                                progress = { animatedProgress },
                                 modifier = Modifier
                                     .fillMaxWidth()
-                                    .height(3.dp),
+                                    .padding(horizontal = 16.dp, vertical = 12.dp),
                                 color = MaterialTheme.colorScheme.primary,
                                 trackColor = MaterialTheme.colorScheme.primaryContainer
                             )
                         }
                     }
 
-                    Spacer(modifier = Modifier.height(32.dp))
+                    Spacer(modifier = Modifier.height(28.dp))
 
-                    // 4. Cancel Processing Button Below Progress (Themed)
                     if (onCancel != null) {
-                        Surface(
+                        OutlinedButton(
                             onClick = onCancel,
-                            shape = RoundedCornerShape(14.dp),
-                            color = MaterialTheme.colorScheme.primaryContainer.copy(alpha = 0.5f),
+                            shape = RoundedCornerShape(18.dp),
                             border = BorderStroke(1.5.dp, MaterialTheme.colorScheme.primary),
                             modifier = Modifier
                                 .fillMaxWidth()
-                                .height(50.dp)
+                                .height(52.dp)
+                                .testTag("cancel_processing_button")
                         ) {
-                            Row(
-                                modifier = Modifier.fillMaxSize(),
-                                horizontalArrangement = Arrangement.Center,
-                                verticalAlignment = Alignment.CenterVertically
-                            ) {
-                                Icon(
-                                    imageVector = Icons.Default.Close,
-                                    contentDescription = null,
-                                    tint = MaterialTheme.colorScheme.primary,
-                                    modifier = Modifier.size(18.dp)
-                                )
-                                Spacer(modifier = Modifier.width(8.dp))
-                                Text(
-                                    text = "Cancel Processing",
-                                    fontSize = 14.sp,
-                                    fontWeight = FontWeight.Bold,
-                                    color = MaterialTheme.colorScheme.primary
-                                )
-                            }
+                            Icon(
+                                imageVector = Icons.Default.Close,
+                                contentDescription = null,
+                                tint = MaterialTheme.colorScheme.primary,
+                                modifier = Modifier.size(18.dp)
+                            )
+                            Spacer(modifier = Modifier.width(8.dp))
+                            Text(
+                                text = "Cancel Processing",
+                                style = MaterialTheme.typography.labelLarge,
+                                color = MaterialTheme.colorScheme.primary
+                            )
                         }
                     }
                 }
@@ -385,6 +380,3 @@ fun FullscreenProcessingDialog(
         }
     }
 }
-
-
-

@@ -4,7 +4,6 @@ import android.graphics.Bitmap
 import android.net.Uri
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
-import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
@@ -12,7 +11,6 @@ import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
@@ -55,10 +53,8 @@ import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedTextField
+import androidx.compose.material3.SecondaryTabRow
 import androidx.compose.material3.Tab
-import androidx.compose.material3.TabRow
-import androidx.compose.material3.TabRowDefaults
-import androidx.compose.material3.TabRowDefaults.tabIndicatorOffset
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
@@ -76,15 +72,13 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.asImageBitmap
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.example.ui.MediaSortType
 import com.example.ui.NavigationTab
-import com.example.ui.theme.SurfaceBorderLight
-import com.example.ui.theme.TextPrimaryDark
-import com.example.ui.theme.TextSecondaryMuted
 import com.example.util.VideoProcessor
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
@@ -109,15 +103,14 @@ fun CustomMediaPickerScreen(
         onRefreshStorage()
     }
 
-    var isMultiSelectMode by remember(targetTab) { mutableStateOf(targetTab == NavigationTab.JOIN_VIDEO) }
+    val isMultiSelectMode by remember(targetTab) { mutableStateOf(targetTab == NavigationTab.JOIN_VIDEO) }
     val selectedUris = remember { mutableStateListOf<Uri>() }
 
     var selectedTabIndex by remember { mutableStateOf(initialTabIndex) } // 0: Media, 1: Folders
     var isMediaGridView by remember { mutableStateOf(false) }
-    var isFolderGridView by remember { mutableStateOf(false) } // Grid vs List view for Folders
+    var isFolderGridView by remember { mutableStateOf(false) }
 
     var searchQuery by remember { mutableStateOf("") }
-    var isSearchExpanded by remember { mutableStateOf(false) }
     var sortType by remember { mutableStateOf(MediaSortType.DATE_DESC) }
     var isSortMenuExpanded by remember { mutableStateOf(false) }
 
@@ -197,28 +190,34 @@ fun CustomMediaPickerScreen(
     Column(
         modifier = Modifier
             .fillMaxSize()
-            .background(Color(0xFFF8FAFC)) // Light aesthetic background
+            .background(MaterialTheme.colorScheme.background)
     ) {
         // Top Action Bar
         Card(
             modifier = Modifier.fillMaxWidth(),
-            colors = CardDefaults.cardColors(containerColor = Color.White),
-            elevation = CardDefaults.cardElevation(defaultElevation = 2.dp),
+            colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceContainerLow),
+            elevation = CardDefaults.cardElevation(defaultElevation = 1.dp),
             shape = RoundedCornerShape(0.dp)
         ) {
             Row(
                 modifier = Modifier
                     .fillMaxWidth()
-                    .padding(horizontal = 12.dp, vertical = 12.dp),
+                    .padding(horizontal = 8.dp, vertical = 10.dp),
                 verticalAlignment = Alignment.CenterVertically,
                 horizontalArrangement = Arrangement.SpaceBetween
             ) {
-                Row(verticalAlignment = Alignment.CenterVertically) {
-                    IconButton(onClick = onClose) {
+                Row(
+                    modifier = Modifier.weight(1f),
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    IconButton(
+                        onClick = onClose,
+                        modifier = Modifier.testTag("picker_close_button")
+                    ) {
                         Icon(
                             imageVector = Icons.AutoMirrored.Filled.ArrowBack,
                             contentDescription = "Back",
-                            tint = TextPrimaryDark
+                            tint = MaterialTheme.colorScheme.onSurface
                         )
                     }
 
@@ -227,13 +226,15 @@ fun CustomMediaPickerScreen(
                     Column {
                         Text(
                             text = toolTitle,
-                            color = TextPrimaryDark,
+                            color = MaterialTheme.colorScheme.onSurface,
                             fontSize = 17.sp,
-                            fontWeight = FontWeight.Bold
+                            fontWeight = FontWeight.Bold,
+                            maxLines = 1,
+                            overflow = TextOverflow.Ellipsis
                         )
                         Text(
                             text = "${videos.size} videos in storage",
-                            color = TextSecondaryMuted,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant,
                             fontSize = 11.sp
                         )
                     }
@@ -241,7 +242,10 @@ fun CustomMediaPickerScreen(
 
                 Row(verticalAlignment = Alignment.CenterVertically) {
                     // Open Files / Storage Document Picker Icon
-                    IconButton(onClick = { externalDocPickerLauncher.launch("video/*") }) {
+                    IconButton(
+                        onClick = { externalDocPickerLauncher.launch("video/*") },
+                        modifier = Modifier.testTag("picker_system_files_button")
+                    ) {
                         Icon(
                             imageVector = Icons.Default.FolderOpen,
                             contentDescription = "Open Files",
@@ -250,13 +254,16 @@ fun CustomMediaPickerScreen(
                     }
 
                     // View Mode Toggle (Grid/List)
-                    IconButton(onClick = {
-                        if (selectedTabIndex == 0) {
-                            isMediaGridView = !isMediaGridView
-                        } else {
-                            isFolderGridView = !isFolderGridView
-                        }
-                    }) {
+                    IconButton(
+                        onClick = {
+                            if (selectedTabIndex == 0) {
+                                isMediaGridView = !isMediaGridView
+                            } else {
+                                isFolderGridView = !isFolderGridView
+                            }
+                        },
+                        modifier = Modifier.testTag("picker_view_mode_button")
+                    ) {
                         val isGrid = if (selectedTabIndex == 0) isMediaGridView else isFolderGridView
                         Icon(
                             imageVector = if (isGrid) Icons.Default.ViewList else Icons.Default.ViewModule,
@@ -267,7 +274,10 @@ fun CustomMediaPickerScreen(
 
                     // Sort Menu
                     Box {
-                        IconButton(onClick = { isSortMenuExpanded = true }) {
+                        IconButton(
+                            onClick = { isSortMenuExpanded = true },
+                            modifier = Modifier.testTag("picker_sort_button")
+                        ) {
                             Icon(
                                 imageVector = Icons.Default.Sort,
                                 contentDescription = "Sort",
@@ -277,15 +287,18 @@ fun CustomMediaPickerScreen(
 
                         DropdownMenu(
                             expanded = isSortMenuExpanded,
-                            onDismissRequest = { isSortMenuExpanded = false },
-                            modifier = Modifier.background(Color.White)
+                            onDismissRequest = { isSortMenuExpanded = false }
                         ) {
                             MediaSortType.values().forEach { st ->
                                 DropdownMenuItem(
                                     text = {
                                         Text(
                                             text = st.label,
-                                            color = if (st == sortType) MaterialTheme.colorScheme.primary else TextPrimaryDark,
+                                            color = if (st == sortType) {
+                                                MaterialTheme.colorScheme.primary
+                                            } else {
+                                                MaterialTheme.colorScheme.onSurface
+                                            },
                                             fontSize = 13.sp,
                                             fontWeight = if (st == sortType) FontWeight.Bold else FontWeight.Normal
                                         )
@@ -300,7 +313,10 @@ fun CustomMediaPickerScreen(
                     }
 
                     // Refresh Button
-                    IconButton(onClick = onRefreshStorage) {
+                    IconButton(
+                        onClick = onRefreshStorage,
+                        modifier = Modifier.testTag("picker_refresh_button")
+                    ) {
                         Icon(
                             imageVector = Icons.Default.Refresh,
                             contentDescription = "Refresh",
@@ -319,35 +335,46 @@ fun CustomMediaPickerScreen(
                 OutlinedTextField(
                     value = searchQuery,
                     onValueChange = { searchQuery = it },
-                    placeholder = { Text("Search video files...", color = TextSecondaryMuted, fontSize = 13.sp) },
+                    placeholder = {
+                        Text(
+                            "Search video files...",
+                            color = MaterialTheme.colorScheme.onSurfaceVariant,
+                            fontSize = 13.sp
+                        )
+                    },
                     leadingIcon = {
-                        Icon(Icons.Default.Search, contentDescription = "Search", tint = MaterialTheme.colorScheme.primary, modifier = Modifier.size(20.dp))
+                        Icon(
+                            Icons.Default.Search,
+                            contentDescription = "Search",
+                            tint = MaterialTheme.colorScheme.primary,
+                            modifier = Modifier.size(20.dp)
+                        )
                     },
                     trailingIcon = {
                         if (searchQuery.isNotEmpty()) {
                             IconButton(onClick = { searchQuery = "" }) {
-                                Icon(Icons.Default.Close, contentDescription = "Clear Search", tint = TextSecondaryMuted, modifier = Modifier.size(18.dp))
+                                Icon(
+                                    Icons.Default.Close,
+                                    contentDescription = "Clear Search",
+                                    tint = MaterialTheme.colorScheme.onSurfaceVariant,
+                                    modifier = Modifier.size(18.dp)
+                                )
                             }
                         }
                     },
                     singleLine = true,
-                    modifier = Modifier.fillMaxWidth(),
-                    shape = RoundedCornerShape(12.dp)
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .testTag("picker_search_input"),
+                    shape = RoundedCornerShape(14.dp)
                 )
             }
 
             // Tabs: Media | Folders
-            TabRow(
+            SecondaryTabRow(
                 selectedTabIndex = selectedTabIndex,
-                containerColor = Color.White,
-                contentColor = MaterialTheme.colorScheme.primary,
-                indicator = { tabPositions ->
-                    TabRowDefaults.SecondaryIndicator(
-                        modifier = Modifier.tabIndicatorOffset(tabPositions[selectedTabIndex]),
-                        color = MaterialTheme.colorScheme.primary,
-                        height = 3.dp
-                    )
-                }
+                containerColor = MaterialTheme.colorScheme.surfaceContainerLow,
+                contentColor = MaterialTheme.colorScheme.primary
             ) {
                 Tab(
                     selected = selectedTabIndex == 0,
@@ -357,7 +384,11 @@ fun CustomMediaPickerScreen(
                             text = "Media (${processedVideos.size})",
                             fontSize = 14.sp,
                             fontWeight = if (selectedTabIndex == 0) FontWeight.Bold else FontWeight.Medium,
-                            color = if (selectedTabIndex == 0) MaterialTheme.colorScheme.primary else TextSecondaryMuted
+                            color = if (selectedTabIndex == 0) {
+                                MaterialTheme.colorScheme.primary
+                            } else {
+                                MaterialTheme.colorScheme.onSurfaceVariant
+                            }
                         )
                     }
                 )
@@ -369,7 +400,11 @@ fun CustomMediaPickerScreen(
                             text = "Folders (${folderGroups.size})",
                             fontSize = 14.sp,
                             fontWeight = if (selectedTabIndex == 1) FontWeight.Bold else FontWeight.Medium,
-                            color = if (selectedTabIndex == 1) MaterialTheme.colorScheme.primary else TextSecondaryMuted
+                            color = if (selectedTabIndex == 1) {
+                                MaterialTheme.colorScheme.primary
+                            } else {
+                                MaterialTheme.colorScheme.onSurfaceVariant
+                            }
                         )
                     }
                 )
@@ -382,16 +417,21 @@ fun CustomMediaPickerScreen(
                 modifier = Modifier
                     .fillMaxWidth()
                     .background(MaterialTheme.colorScheme.primaryContainer)
-                    .padding(horizontal = 16.dp, vertical = 8.dp),
+                    .padding(horizontal = 16.dp, vertical = 10.dp),
                 verticalAlignment = Alignment.CenterVertically,
                 horizontalArrangement = Arrangement.SpaceBetween
             ) {
                 Row(verticalAlignment = Alignment.CenterVertically) {
-                    Icon(Icons.Default.Folder, contentDescription = null, tint = MaterialTheme.colorScheme.primary, modifier = Modifier.size(16.dp))
+                    Icon(
+                        Icons.Default.Folder,
+                        contentDescription = null,
+                        tint = MaterialTheme.colorScheme.onPrimaryContainer,
+                        modifier = Modifier.size(16.dp)
+                    )
                     Spacer(modifier = Modifier.width(6.dp))
                     Text(
                         text = "Filtered by Folder: $selectedFolderFilter",
-                        color = TextPrimaryDark,
+                        color = MaterialTheme.colorScheme.onPrimaryContainer,
                         fontSize = 12.sp,
                         fontWeight = FontWeight.Bold
                     )
@@ -412,7 +452,7 @@ fun CustomMediaPickerScreen(
                 // Folders View Mode: Grid or List
                 if (folderGroups.isEmpty()) {
                     Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
-                        Text("No video folders found", color = TextSecondaryMuted, fontSize = 14.sp)
+                        Text("No video folders found", color = MaterialTheme.colorScheme.onSurfaceVariant, fontSize = 14.sp)
                     }
                 } else if (isFolderGridView) {
                     // Folders Grid View
@@ -435,7 +475,7 @@ fun CustomMediaPickerScreen(
                         }
                     }
                 } else {
-                    // Folders List View (One by One)
+                    // Folders List View
                     LazyColumn(
                         modifier = Modifier
                             .fillMaxSize()
@@ -457,7 +497,7 @@ fun CustomMediaPickerScreen(
                 // Media Tab: Grid or List
                 if (processedVideos.isEmpty()) {
                     Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
-                        Text("No videos found", color = TextSecondaryMuted, fontSize = 14.sp)
+                        Text("No videos found", color = MaterialTheme.colorScheme.onSurfaceVariant, fontSize = 14.sp)
                     }
                 } else if (isMediaGridView) {
                     // Media Grid View
@@ -522,9 +562,9 @@ fun CustomMediaPickerScreen(
         if (isMultiSelectMode) {
             Card(
                 modifier = Modifier.fillMaxWidth(),
-                colors = CardDefaults.cardColors(containerColor = Color.White),
+                colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceContainerLow),
                 elevation = CardDefaults.cardElevation(defaultElevation = 6.dp),
-                shape = RoundedCornerShape(topStart = 16.dp, topEnd = 16.dp)
+                shape = RoundedCornerShape(topStart = 20.dp, topEnd = 20.dp)
             ) {
                 Box(modifier = Modifier.padding(16.dp)) {
                     Button(
@@ -534,16 +574,18 @@ fun CustomMediaPickerScreen(
                             }
                         },
                         enabled = selectedUris.isNotEmpty(),
-                        modifier = Modifier.fillMaxWidth(),
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .height(52.dp)
+                            .testTag("picker_add_selected_button"),
                         colors = ButtonDefaults.buttonColors(
                             containerColor = MaterialTheme.colorScheme.primary,
-                            disabledContainerColor = Color(0xFFCBD5E1)
+                            disabledContainerColor = MaterialTheme.colorScheme.surfaceVariant
                         ),
-                        shape = RoundedCornerShape(12.dp)
+                        shape = RoundedCornerShape(14.dp)
                     ) {
                         Text(
                             text = if (selectedUris.isEmpty()) "Select videos to join" else "Add ${selectedUris.size} selected videos",
-                            color = Color.White,
                             fontWeight = FontWeight.Bold,
                             fontSize = 15.sp
                         )
@@ -566,9 +608,9 @@ fun CustomMediaPickerScreen(
                         onDeleteVideo(target)
                         videoToDelete = null
                     },
-                    colors = ButtonDefaults.buttonColors(containerColor = Color(0xFFDC2626))
+                    colors = ButtonDefaults.buttonColors(containerColor = MaterialTheme.colorScheme.error)
                 ) {
-                    Text("Delete")
+                    Text("Delete", color = MaterialTheme.colorScheme.onError)
                 }
             },
             dismissButton = {
@@ -615,13 +657,13 @@ private fun VideoThumbnailView(
         )
     } else {
         Box(
-            modifier = modifier.background(Color(0xFFEEF2FF)),
+            modifier = modifier.background(MaterialTheme.colorScheme.primaryContainer),
             contentAlignment = Alignment.Center
         ) {
             Icon(
                 imageVector = Icons.Outlined.Movie,
                 contentDescription = null,
-                tint = MaterialTheme.colorScheme.primary,
+                tint = MaterialTheme.colorScheme.onPrimaryContainer,
                 modifier = Modifier.size(24.dp)
             )
         }
@@ -637,9 +679,9 @@ private fun FolderGridCardItem(
         modifier = Modifier
             .fillMaxWidth()
             .clickable(onClick = onClick),
-        colors = CardDefaults.cardColors(containerColor = Color.White),
-        border = BorderStroke(1.dp, SurfaceBorderLight),
-        shape = RoundedCornerShape(14.dp)
+        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceContainerLow),
+        border = BorderStroke(1.dp, MaterialTheme.colorScheme.outlineVariant),
+        shape = RoundedCornerShape(16.dp)
     ) {
         Column(
             modifier = Modifier.padding(12.dp),
@@ -668,7 +710,7 @@ private fun FolderGridCardItem(
                     Icon(
                         imageVector = Icons.Default.Folder,
                         contentDescription = null,
-                        tint = Color.White,
+                        tint = MaterialTheme.colorScheme.onPrimary,
                         modifier = Modifier.size(14.dp)
                     )
                 }
@@ -678,7 +720,7 @@ private fun FolderGridCardItem(
                 text = folder.name,
                 fontWeight = FontWeight.Bold,
                 fontSize = 14.sp,
-                color = TextPrimaryDark,
+                color = MaterialTheme.colorScheme.onSurface,
                 maxLines = 1,
                 overflow = TextOverflow.Ellipsis
             )
@@ -686,7 +728,7 @@ private fun FolderGridCardItem(
             Text(
                 text = "${folder.videoCount} Videos • ${VideoProcessor.formatFileSize(folder.totalSizeBytes)}",
                 fontSize = 11.sp,
-                color = TextSecondaryMuted
+                color = MaterialTheme.colorScheme.onSurfaceVariant
             )
         }
     }
@@ -701,9 +743,9 @@ private fun FolderListRowItem(
         modifier = Modifier
             .fillMaxWidth()
             .clickable(onClick = onClick),
-        colors = CardDefaults.cardColors(containerColor = Color.White),
-        border = BorderStroke(1.dp, SurfaceBorderLight),
-        shape = RoundedCornerShape(12.dp)
+        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceContainerLow),
+        border = BorderStroke(1.dp, MaterialTheme.colorScheme.outlineVariant),
+        shape = RoundedCornerShape(14.dp)
     ) {
         Row(
             modifier = Modifier
@@ -733,7 +775,7 @@ private fun FolderListRowItem(
                     Icon(
                         imageVector = Icons.Default.Folder,
                         contentDescription = null,
-                        tint = Color.White,
+                        tint = MaterialTheme.colorScheme.onPrimary,
                         modifier = Modifier.size(12.dp)
                     )
                 }
@@ -746,7 +788,7 @@ private fun FolderListRowItem(
                     text = folder.name,
                     fontWeight = FontWeight.Bold,
                     fontSize = 14.sp,
-                    color = TextPrimaryDark,
+                    color = MaterialTheme.colorScheme.onSurface,
                     maxLines = 1,
                     overflow = TextOverflow.Ellipsis
                 )
@@ -756,7 +798,7 @@ private fun FolderListRowItem(
                 Text(
                     text = "${folder.videoCount} Videos • ${VideoProcessor.formatFileSize(folder.totalSizeBytes)}",
                     fontSize = 11.sp,
-                    color = TextSecondaryMuted
+                    color = MaterialTheme.colorScheme.onSurfaceVariant
                 )
             }
 
@@ -787,13 +829,17 @@ private fun VideoListRowItem(
             .fillMaxWidth()
             .clickable(onClick = onClick),
         colors = CardDefaults.cardColors(
-            containerColor = if (isSelected) MaterialTheme.colorScheme.primaryContainer else Color.White
+            containerColor = if (isSelected) {
+                MaterialTheme.colorScheme.primaryContainer
+            } else {
+                MaterialTheme.colorScheme.surfaceContainerLow
+            }
         ),
         border = BorderStroke(
             1.dp,
-            if (isSelected) MaterialTheme.colorScheme.primary else SurfaceBorderLight
+            if (isSelected) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.outlineVariant
         ),
-        shape = RoundedCornerShape(12.dp)
+        shape = RoundedCornerShape(14.dp)
     ) {
         Row(
             modifier = Modifier
@@ -838,22 +884,28 @@ private fun VideoListRowItem(
                     )
                 }
 
-                // Play Button Overlay
+                // Play Button Overlay (48dp touch area wrapping visual icon)
                 Box(
                     modifier = Modifier
-                        .size(26.dp)
+                        .size(48.dp)
                         .align(Alignment.Center)
-                        .clip(CircleShape)
-                        .background(Color.Black.copy(alpha = 0.45f))
                         .clickable(onClick = onPlay),
                     contentAlignment = Alignment.Center
                 ) {
-                    Icon(
-                        imageVector = Icons.Default.PlayArrow,
-                        contentDescription = "Play",
-                        tint = Color.White,
-                        modifier = Modifier.size(16.dp)
-                    )
+                    Box(
+                        modifier = Modifier
+                            .size(26.dp)
+                            .clip(CircleShape)
+                            .background(Color.Black.copy(alpha = 0.5f)),
+                        contentAlignment = Alignment.Center
+                    ) {
+                        Icon(
+                            imageVector = Icons.Default.PlayArrow,
+                            contentDescription = "Play",
+                            tint = Color.White,
+                            modifier = Modifier.size(16.dp)
+                        )
+                    }
                 }
             }
 
@@ -865,7 +917,7 @@ private fun VideoListRowItem(
                     text = item.title,
                     fontWeight = FontWeight.Bold,
                     fontSize = 13.sp,
-                    color = TextPrimaryDark,
+                    color = if (isSelected) MaterialTheme.colorScheme.onPrimaryContainer else MaterialTheme.colorScheme.onSurface,
                     maxLines = 1,
                     overflow = TextOverflow.Ellipsis
                 )
@@ -875,7 +927,7 @@ private fun VideoListRowItem(
                 Text(
                     text = "${item.width}x${item.height} • ${VideoProcessor.formatFileSize(item.sizeBytes)}",
                     fontSize = 11.sp,
-                    color = TextSecondaryMuted
+                    color = MaterialTheme.colorScheme.onSurfaceVariant
                 )
 
                 Spacer(modifier = Modifier.height(1.dp))
@@ -890,7 +942,10 @@ private fun VideoListRowItem(
 
             // Options 3-dot dropdown
             Box {
-                IconButton(onClick = { isMenuExpanded = true }) {
+                IconButton(
+                    onClick = { isMenuExpanded = true },
+                    modifier = Modifier.size(48.dp)
+                ) {
                     Icon(
                         imageVector = Icons.Default.MoreVert,
                         contentDescription = "Options",
@@ -900,39 +955,44 @@ private fun VideoListRowItem(
 
                 DropdownMenu(
                     expanded = isMenuExpanded,
-                    onDismissRequest = { isMenuExpanded = false },
-                    modifier = Modifier.background(Color.White)
+                    onDismissRequest = { isMenuExpanded = false }
                 ) {
                     DropdownMenuItem(
-                        text = { Text("Cut / Trim Video", color = TextPrimaryDark, fontSize = 13.sp) },
+                        text = { Text("Cut / Trim Video", fontSize = 13.sp) },
                         onClick = {
                             isMenuExpanded = false
                             onSelectTool(NavigationTab.SINGLE_CUT)
                         }
                     )
                     DropdownMenuItem(
-                        text = { Text("Multi-Part Cut", color = TextPrimaryDark, fontSize = 13.sp) },
+                        text = { Text("Multi-Part Cut", fontSize = 13.sp) },
                         onClick = {
                             isMenuExpanded = false
                             onSelectTool(NavigationTab.MULTI_CUT)
                         }
                     )
                     DropdownMenuItem(
-                        text = { Text("Rotate Video", color = TextPrimaryDark, fontSize = 13.sp) },
+                        text = { Text("Rotate Video", fontSize = 13.sp) },
                         onClick = {
                             isMenuExpanded = false
                             onSelectTool(NavigationTab.ROTATE_VIDEO)
                         }
                     )
                     DropdownMenuItem(
-                        text = { Text("Compress Video", color = TextPrimaryDark, fontSize = 13.sp) },
+                        text = { Text("Compress Video", fontSize = 13.sp) },
                         onClick = {
                             isMenuExpanded = false
                             onSelectTool(NavigationTab.COMPRESSOR)
                         }
                     )
                     DropdownMenuItem(
-                        text = { Text("Delete from Storage", color = Color(0xFFDC2626), fontSize = 13.sp) },
+                        text = {
+                            Text(
+                                "Delete from Storage",
+                                color = MaterialTheme.colorScheme.error,
+                                fontSize = 13.sp
+                            )
+                        },
                         onClick = {
                             isMenuExpanded = false
                             onDelete()
@@ -959,13 +1019,17 @@ private fun VideoGridCardItem(
             .height(130.dp)
             .clickable(onClick = onClick),
         colors = CardDefaults.cardColors(
-            containerColor = if (isSelected) MaterialTheme.colorScheme.primaryContainer else Color.White
+            containerColor = if (isSelected) {
+                MaterialTheme.colorScheme.primaryContainer
+            } else {
+                MaterialTheme.colorScheme.surfaceContainerLow
+            }
         ),
         border = BorderStroke(
             1.dp,
-            if (isSelected) MaterialTheme.colorScheme.primary else SurfaceBorderLight
+            if (isSelected) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.outlineVariant
         ),
-        shape = RoundedCornerShape(10.dp)
+        shape = RoundedCornerShape(12.dp)
     ) {
         Box(modifier = Modifier.fillMaxSize()) {
             Column(
@@ -978,7 +1042,7 @@ private fun VideoGridCardItem(
                     modifier = Modifier
                         .fillMaxWidth()
                         .height(76.dp)
-                        .clip(RoundedCornerShape(6.dp))
+                        .clip(RoundedCornerShape(8.dp))
                 ) {
                     VideoThumbnailView(
                         uri = item.uri,
@@ -1005,7 +1069,7 @@ private fun VideoGridCardItem(
 
                 Text(
                     text = item.title,
-                    color = TextPrimaryDark,
+                    color = if (isSelected) MaterialTheme.colorScheme.onPrimaryContainer else MaterialTheme.colorScheme.onSurface,
                     fontSize = 11.sp,
                     fontWeight = FontWeight.Bold,
                     maxLines = 1,
@@ -1014,7 +1078,7 @@ private fun VideoGridCardItem(
 
                 Text(
                     text = VideoProcessor.formatFileSize(item.sizeBytes),
-                    color = TextSecondaryMuted,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
                     fontSize = 9.sp
                 )
             }
@@ -1022,7 +1086,7 @@ private fun VideoGridCardItem(
             if (isMultiSelectMode && isSelected) {
                 Icon(
                     imageVector = Icons.Default.CheckCircle,
-                    contentDescription = null,
+                    contentDescription = "Selected",
                     tint = MaterialTheme.colorScheme.primary,
                     modifier = Modifier
                         .align(Alignment.TopEnd)
@@ -1033,3 +1097,4 @@ private fun VideoGridCardItem(
         }
     }
 }
+

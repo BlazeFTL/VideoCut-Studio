@@ -9,7 +9,7 @@ import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.statusBarsPadding
 import androidx.compose.foundation.layout.width
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.ArrowBack
+import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.filled.Home
 import androidx.compose.material.icons.outlined.Settings
 import androidx.compose.material3.Icon
@@ -27,11 +27,10 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.example.ui.NavigationTab
-import com.example.ui.theme.TextPrimaryDark
 
 @Composable
 fun StaggeredMenuIcon(
-    tint: Color = TextPrimaryDark,
+    tint: Color,
     modifier: Modifier = Modifier.size(20.dp)
 ) {
     Canvas(modifier = modifier) {
@@ -40,7 +39,6 @@ fun StaggeredMenuIcon(
         val w = size.width
         val h = size.height
 
-        // Top line (long)
         drawLine(
             color = tint,
             start = Offset(0f, h * 0.2f),
@@ -49,7 +47,6 @@ fun StaggeredMenuIcon(
             cap = cap
         )
 
-        // Middle line (medium)
         drawLine(
             color = tint,
             start = Offset(0f, h * 0.5f),
@@ -58,7 +55,6 @@ fun StaggeredMenuIcon(
             cap = cap
         )
 
-        // Bottom line (shorter)
         drawLine(
             color = tint,
             start = Offset(0f, h * 0.8f),
@@ -96,7 +92,7 @@ fun TopDashboardBar(
             if (isSettings) {
                 IconButton(onClick = onNavigateBack) {
                     Icon(
-                        imageVector = Icons.Default.ArrowBack,
+                        imageVector = Icons.AutoMirrored.Filled.ArrowBack,
                         contentDescription = "Back",
                         tint = MaterialTheme.colorScheme.primary,
                         modifier = Modifier.size(24.dp)

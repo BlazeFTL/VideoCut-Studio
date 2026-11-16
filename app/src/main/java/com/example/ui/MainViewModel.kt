@@ -8,6 +8,7 @@ import androidx.lifecycle.viewModelScope
 import com.example.data.AppDatabase
 import com.example.data.ProcessedVideoEntity
 import com.example.model.AppTheme
+import com.example.model.ThemeBrightnessMode
 import com.example.model.CompressionMethod
 import com.example.model.CompressionPreset
 import com.example.model.CompressionSettings
@@ -17,6 +18,7 @@ import com.example.model.RotatePart
 import com.example.model.VideoItem
 import com.example.service.VideoProcessingService
 import com.example.util.VideoProcessor
+import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.flow.MutableSharedFlow
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharedFlow
@@ -212,6 +214,16 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
     )
     val currentTheme: StateFlow<AppTheme> = _currentTheme.asStateFlow()
 
+    private val _brightnessMode = MutableStateFlow(
+        ThemeBrightnessMode.fromId(prefs.getString("brightness_mode", ThemeBrightnessMode.SYSTEM.id) ?: ThemeBrightnessMode.SYSTEM.id)
+    )
+    val brightnessMode: StateFlow<ThemeBrightnessMode> = _brightnessMode.asStateFlow()
+
+    private val _useDynamicColor = MutableStateFlow(
+        prefs.getBoolean("use_dynamic_color", false)
+    )
+    val useDynamicColor: StateFlow<Boolean> = _useDynamicColor.asStateFlow()
+
     private val _enableForegroundService = MutableStateFlow(
         prefs.getBoolean("enable_fg_service", true)
     )
@@ -225,6 +237,22 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
     fun setAppTheme(theme: AppTheme) {
         _currentTheme.value = theme
         prefs.edit().putString("selected_theme", theme.id).apply()
+    }
+
+    fun setBrightnessMode(mode: ThemeBrightnessMode) {
+        _brightnessMode.value = mode
+        prefs.edit().putString("brightness_mode", mode.id).apply()
+    }
+
+    fun setUseDynamicColor(enabled: Boolean) {
+        _useDynamicColor.value = enabled
+        prefs.edit().putBoolean("use_dynamic_color", enabled).apply()
+    }
+
+    fun emitUserMessage(message: String) {
+        viewModelScope.launch {
+            _userMessage.emit(message)
+        }
     }
 
     fun setEnableForegroundService(enabled: Boolean) {
@@ -323,6 +351,19 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
 
     fun selectVideoUri(uri: Uri) {
         _timelineThumbnails.value = emptyList()
+        _multiPartSegments.value = emptyList()
+        _rotateParts.value = emptyList()
+        _rotationDegrees.value = 0
+        _flipHorizontal.value = false
+        _flipVertical.value = false
+        _isTimelineRotateEnabled.value = false
+        _rotateStartMs.value = 0L
+        _rotateEndMs.value = 0L
+        _customResolution.value = "Original Resolution"
+        _singleStartMs.value = 0L
+        _singleEndMs.value = 0L
+        _targetSizeBytes.value = 0L
+
         val titleFromUri = uri.lastPathSegment?.substringAfterLast('/') ?: "Video"
         _selectedVideo.value = VideoItem(
             uri = uri,
@@ -344,6 +385,7 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
             if (item.durationMs > 0) {
                 _singleStartMs.value = 0L
                 _singleEndMs.value = item.durationMs
+                _rotateEndMs.value = item.durationMs
 
                 _timelineThumbnails.value = VideoProcessor.extractTimelineThumbnails(
                     getApplication(), uri, item.durationMs, count = 10
@@ -354,9 +396,13 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
     }
 
     fun setSingleCutRange(startMs: Long, endMs: Long) {
-        val maxDuration = _selectedVideo.value?.durationMs ?: 180_000L
-        _singleStartMs.value = startMs.coerceIn(0L, maxDuration - 1000L)
-        _singleEndMs.value = endMs.coerceIn(_singleStartMs.value + 1000L, maxDuration)
+        val maxDuration = (_selectedVideo.value?.durationMs ?: 180_000L).coerceAtLeast(0L)
+        if (maxDuration <= 0L) return
+        val minSpan = minOf(1000L, maxDuration)
+        val clampedStart = startMs.coerceIn(0L, (maxDuration - minSpan).coerceAtLeast(0L))
+        val clampedEnd = endMs.coerceIn((clampedStart + minSpan).coerceAtMost(maxDuration), maxDuration)
+        _singleStartMs.value = clampedStart
+        _singleEndMs.value = clampedEnd
     }
 
     fun setMultiPartMode(mode: MultiPartCutMode) {
@@ -441,24 +487,29 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
             val outputDir = VideoProcessor.getVideoCutOutputDir(getApplication())
             val outputFile = File(outputDir, outputFileName)
 
-            val success = VideoProcessor.cutSingleRangeFast(
-                context = getApplication(),
-                sourceUri = video.uri,
-                startMs = _singleStartMs.value,
-                endMs = _singleEndMs.value,
-                outputFile = outputFile,
-                onProgress = { p ->
-                    _processingProgress.value = p
-                    updateBackgroundServiceProgress("Fast cutting...", p)
-                }
-            )
+            val success = try {
+                VideoProcessor.cutSingleRangeFast(
+                    context = getApplication(),
+                    sourceUri = video.uri,
+                    startMs = _singleStartMs.value,
+                    endMs = _singleEndMs.value,
+                    outputFile = outputFile,
+                    onProgress = { p ->
+                        _processingProgress.value = p
+                        updateBackgroundServiceProgress("Fast cutting...", p)
+                    }
+                )
+            } catch (e: CancellationException) {
+                try { if (outputFile.exists()) outputFile.delete() } catch (_: Exception) {}
+                throw e
+            }
 
             _isProcessing.value = false
             stopBackgroundServiceIfNeeded()
             val elapsedSecStr = String.format(java.util.Locale.US, "%.2f", (System.currentTimeMillis() - startTimeMs) / 1000.0)
 
-            if (success && outputFile.exists()) {
-                val cutDurationMs = _singleEndMs.value - _singleStartMs.value
+            if (success && outputFile.exists() && outputFile.length() > 0L) {
+                val cutDurationMs = (_singleEndMs.value - _singleStartMs.value).coerceAtLeast(1L)
                 val outputSize = outputFile.length()
                 val origSize = if (video.sizeBytes > 0) video.sizeBytes else (outputSize * video.durationMs / maxOf(1L, cutDurationMs))
                 VideoProcessor.notifyMediaScanner(getApplication(), outputFile)
@@ -480,6 +531,7 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
                 _statusMessage.value = "Done in ${elapsedSecStr}s. Saved to Download/VideoCut/${outputFile.name}"
                 _activeTab.value = NavigationTab.HISTORY
             } else {
+                try { if (outputFile.exists()) outputFile.delete() } catch (_: Exception) {}
                 _userMessage.emit("Failed to cut video")
                 _statusMessage.value = "Error during video processing"
             }
@@ -504,23 +556,28 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
             val outputDir = VideoProcessor.getVideoCutOutputDir(getApplication())
             val outputFile = File(outputDir, outputFileName)
 
-            val success = VideoProcessor.processSegmentsFast(
-                context = getApplication(),
-                sourceUri = video.uri,
-                rawSegments = _multiPartSegments.value,
-                mode = _multiPartMode.value,
-                outputFile = outputFile,
-                onProgress = { p ->
-                    _processingProgress.value = p
-                    updateBackgroundServiceProgress("Processing segments...", p)
-                }
-            )
+            val success = try {
+                VideoProcessor.processSegmentsFast(
+                    context = getApplication(),
+                    sourceUri = video.uri,
+                    rawSegments = _multiPartSegments.value,
+                    mode = _multiPartMode.value,
+                    outputFile = outputFile,
+                    onProgress = { p ->
+                        _processingProgress.value = p
+                        updateBackgroundServiceProgress("Processing segments...", p)
+                    }
+                )
+            } catch (e: CancellationException) {
+                try { if (outputFile.exists()) outputFile.delete() } catch (_: Exception) {}
+                throw e
+            }
 
             _isProcessing.value = false
             stopBackgroundServiceIfNeeded()
             val elapsedSecStr = String.format(java.util.Locale.US, "%.2f", (System.currentTimeMillis() - startTimeMs) / 1000.0)
 
-            if (success && outputFile.exists()) {
+            if (success && outputFile.exists() && outputFile.length() > 0L) {
                 val outputSize = outputFile.length()
                 val origSize = if (video.sizeBytes > 0) video.sizeBytes else (outputSize + 1024 * 1024)
                 VideoProcessor.notifyMediaScanner(getApplication(), outputFile)
@@ -548,6 +605,7 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
                 _statusMessage.value = "Done in ${elapsedSecStr}s. Saved to Download/VideoCut/${outputFile.name}"
                 _activeTab.value = NavigationTab.HISTORY
             } else {
+                try { if (outputFile.exists()) outputFile.delete() } catch (_: Exception) {}
                 _userMessage.emit("Failed to process multi-part cut")
                 _statusMessage.value = "Error during multi-part cut"
             }
@@ -570,26 +628,31 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
             val outputDir = VideoProcessor.getVideoCutOutputDir(getApplication())
             val outputFile = File(outputDir, outputFileName)
 
-            val success = VideoProcessor.compressVideoWithEngine(
-                context = getApplication(),
-                sourceUri = video.uri,
-                outputFile = outputFile,
-                method = _compressionMethod.value,
-                crf = _crfValue.value,
-                speedPreset = _encodingSpeed.value,
-                targetSizeBytes = _targetSizeBytes.value,
-                targetResolution = _customResolution.value,
-                onProgress = { p ->
-                    _processingProgress.value = p
-                    updateBackgroundServiceProgress("Compressing video...", p)
-                }
-            )
+            val success = try {
+                VideoProcessor.compressVideoWithEngine(
+                    context = getApplication(),
+                    sourceUri = video.uri,
+                    outputFile = outputFile,
+                    method = _compressionMethod.value,
+                    crf = _crfValue.value,
+                    speedPreset = _encodingSpeed.value,
+                    targetSizeBytes = _targetSizeBytes.value,
+                    targetResolution = _customResolution.value,
+                    onProgress = { p ->
+                        _processingProgress.value = p
+                        updateBackgroundServiceProgress("Compressing video...", p)
+                    }
+                )
+            } catch (e: CancellationException) {
+                try { if (outputFile.exists()) outputFile.delete() } catch (_: Exception) {}
+                throw e
+            }
 
             _isProcessing.value = false
             stopBackgroundServiceIfNeeded()
             val elapsedSecStr = String.format(java.util.Locale.US, "%.2f", (System.currentTimeMillis() - startTimeMs) / 1000.0)
 
-            if (success && outputFile.exists()) {
+            if (success && outputFile.exists() && outputFile.length() > 0L) {
                 val outputSize = outputFile.length()
                 val origSize = if (video.sizeBytes > 0) video.sizeBytes else (outputSize + 1024 * 1024)
                 VideoProcessor.notifyMediaScanner(getApplication(), outputFile)
@@ -597,6 +660,13 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
                 val savedPercent = if (origSize > 0) {
                     ((1.0 - (outputSize.toDouble() / origSize)) * 100).toInt().coerceAtLeast(0)
                 } else 0
+                val (tw, th) = VideoProcessor.resolveTargetDimensions(video.width, video.height, _customResolution.value)
+                val outMeta = try { VideoProcessor.getVideoMetadata(getApplication(), Uri.fromFile(outputFile)) } catch (_: Exception) { null }
+                val actualRes = if (outMeta != null && outMeta.width > 0 && outMeta.height > 0) {
+                    "${outMeta.width}x${outMeta.height}"
+                } else {
+                    "${tw}x${th}"
+                }
 
                 dao.insertProcessedVideo(
                     ProcessedVideoEntity(
@@ -606,8 +676,8 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
                         originalSizeBytes = origSize,
                         outputSizeBytes = outputSize,
                         durationMs = video.durationMs,
-                        resolution = _customResolution.value,
-                        details = "Compressed in ${elapsedSecStr}s (${savedPercent}% saved)"
+                        resolution = actualRes,
+                        details = "Compressed (${_compressionMethod.value.title}) in ${elapsedSecStr}s (${savedPercent}% saved)"
                     )
                 )
 
@@ -615,6 +685,7 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
                 _statusMessage.value = "Done in ${elapsedSecStr}s. Saved to Download/VideoCut/${outputFile.name}"
                 _activeTab.value = NavigationTab.HISTORY
             } else {
+                try { if (outputFile.exists()) outputFile.delete() } catch (_: Exception) {}
                 _userMessage.emit("Failed to compress video")
                 _statusMessage.value = "Compression failed"
             }
@@ -698,22 +769,27 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
             val outputDir = VideoProcessor.getVideoCutOutputDir(getApplication())
             val outputFile = File(outputDir, outputFileName)
 
-            val success = VideoProcessor.joinVideosFastOrReencode(
-                context = getApplication(),
-                videoItems = videos,
-                isFastMerge = isFastMerge,
-                outputFile = outputFile,
-                onProgress = { p ->
-                    _processingProgress.value = p
-                    updateBackgroundServiceProgress("Joining videos...", p)
-                }
-            )
+            val success = try {
+                VideoProcessor.joinVideosFastOrReencode(
+                    context = getApplication(),
+                    videoItems = videos,
+                    isFastMerge = isFastMerge,
+                    outputFile = outputFile,
+                    onProgress = { p ->
+                        _processingProgress.value = p
+                        updateBackgroundServiceProgress("Joining videos...", p)
+                    }
+                )
+            } catch (e: CancellationException) {
+                try { if (outputFile.exists()) outputFile.delete() } catch (_: Exception) {}
+                throw e
+            }
 
             _isProcessing.value = false
             stopBackgroundServiceIfNeeded()
             val elapsedSecStr = String.format(java.util.Locale.US, "%.2f", (System.currentTimeMillis() - startTimeMs) / 1000.0)
 
-            if (success && outputFile.exists()) {
+            if (success && outputFile.exists() && outputFile.length() > 0L) {
                 val outputSize = outputFile.length()
                 val totalOrigSize = videos.sumOf { it.sizeBytes }
                 val totalDuration = videos.sumOf { it.durationMs }
@@ -739,6 +815,7 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
                 _statusMessage.value = "Done in ${elapsedSecStr}s. Saved to Download/VideoCut/${outputFile.name}"
                 _activeTab.value = NavigationTab.HISTORY
             } else {
+                try { if (outputFile.exists()) outputFile.delete() } catch (_: Exception) {}
                 _userMessage.emit("Failed to join videos")
                 _statusMessage.value = "Error during video join"
             }
@@ -784,9 +861,13 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
     }
 
     fun setRotateTimelineRange(startMs: Long, endMs: Long) {
-        val maxDur = _selectedVideo.value?.durationMs ?: 60000L
-        _rotateStartMs.value = startMs.coerceIn(0L, maxDur - 500L)
-        _rotateEndMs.value = endMs.coerceIn(_rotateStartMs.value + 500L, maxDur)
+        val maxDur = (_selectedVideo.value?.durationMs ?: 60000L).coerceAtLeast(0L)
+        if (maxDur <= 0L) return
+        val minSpan = minOf(500L, maxDur)
+        val clampedStart = startMs.coerceIn(0L, (maxDur - minSpan).coerceAtLeast(0L))
+        val clampedEnd = endMs.coerceIn((clampedStart + minSpan).coerceAtMost(maxDur), maxDur)
+        _rotateStartMs.value = clampedStart
+        _rotateEndMs.value = clampedEnd
     }
 
     fun addRotatePart() {
@@ -830,54 +911,61 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
             val outputFile = File(outputDir, outputFileName)
 
             val parts = _rotateParts.value
-            val success = if (_isTimelineRotateEnabled.value) {
-                val effectiveParts = if (parts.isNotEmpty()) parts else listOf(
-                    RotatePart(
-                        id = "default_range_1",
-                        startMs = _rotateStartMs.value,
-                        endMs = _rotateEndMs.value,
+            val success = try {
+                if (_isTimelineRotateEnabled.value) {
+                    val effectiveParts = if (parts.isNotEmpty()) parts else listOf(
+                        RotatePart(
+                            id = "default_range_1",
+                            startMs = _rotateStartMs.value,
+                            endMs = _rotateEndMs.value,
+                            rotationDegrees = deg,
+                            flipHorizontal = _flipHorizontal.value,
+                            flipVertical = _flipVertical.value
+                        )
+                    )
+                    VideoProcessor.rotateMultiPartVideo(
+                        context = getApplication(),
+                        sourceUri = video.uri,
+                        parts = effectiveParts,
+                        totalDurationMs = video.durationMs,
+                        outputFile = outputFile,
+                        onProgress = { p ->
+                            _processingProgress.value = p
+                            updateBackgroundServiceProgress("Rotating video...", p)
+                        }
+                    )
+                } else {
+                    VideoProcessor.rotateVideo(
+                        context = getApplication(),
+                        sourceUri = video.uri,
                         rotationDegrees = deg,
                         flipHorizontal = _flipHorizontal.value,
-                        flipVertical = _flipVertical.value
+                        flipVertical = _flipVertical.value,
+                        isTimelineRange = false,
+                        startMs = 0L,
+                        endMs = video.durationMs,
+                        totalDurationMs = video.durationMs,
+                        outputFile = outputFile,
+                        onProgress = { p ->
+                            _processingProgress.value = p
+                            updateBackgroundServiceProgress("Rotating video...", p)
+                        }
                     )
-                )
-                VideoProcessor.rotateMultiPartVideo(
-                    context = getApplication(),
-                    sourceUri = video.uri,
-                    parts = effectiveParts,
-                    totalDurationMs = video.durationMs,
-                    outputFile = outputFile,
-                    onProgress = { p ->
-                        _processingProgress.value = p
-                        updateBackgroundServiceProgress("Rotating video...", p)
-                    }
-                )
-            } else {
-                VideoProcessor.rotateVideo(
-                    context = getApplication(),
-                    sourceUri = video.uri,
-                    rotationDegrees = deg,
-                    flipHorizontal = _flipHorizontal.value,
-                    flipVertical = _flipVertical.value,
-                    isTimelineRange = false,
-                    startMs = 0L,
-                    endMs = video.durationMs,
-                    totalDurationMs = video.durationMs,
-                    outputFile = outputFile,
-                    onProgress = { p ->
-                        _processingProgress.value = p
-                        updateBackgroundServiceProgress("Rotating video...", p)
-                    }
-                )
+                }
+            } catch (e: CancellationException) {
+                try { if (outputFile.exists()) outputFile.delete() } catch (_: Exception) {}
+                throw e
             }
 
             _isProcessing.value = false
             stopBackgroundServiceIfNeeded()
             val elapsedSecStr = String.format(java.util.Locale.US, "%.2f", (System.currentTimeMillis() - startTimeMs) / 1000.0)
 
-            if (success && outputFile.exists()) {
+            if (success && outputFile.exists() && outputFile.length() > 0L) {
                 val outputSize = outputFile.length()
                 VideoProcessor.notifyMediaScanner(getApplication(), outputFile)
+                val outMeta = try { VideoProcessor.getVideoMetadata(getApplication(), Uri.fromFile(outputFile)) } catch (_: Exception) { null }
+                val actualRes = if (outMeta != null && outMeta.width > 0) "${outMeta.width}x${outMeta.height}" else "${video.width}x${video.height}"
 
                 dao.insertProcessedVideo(
                     ProcessedVideoEntity(
@@ -887,7 +975,7 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
                         originalSizeBytes = video.sizeBytes,
                         outputSizeBytes = outputSize,
                         durationMs = video.durationMs,
-                        resolution = "${video.width}x${video.height}",
+                        resolution = actualRes,
                         details = "Rotated ${deg}° in ${elapsedSecStr}s"
                     )
                 )
@@ -896,6 +984,7 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
                 _statusMessage.value = "Done in ${elapsedSecStr}s. Saved to Download/VideoCut/${outputFile.name}"
                 _activeTab.value = NavigationTab.HISTORY
             } else {
+                try { if (outputFile.exists()) outputFile.delete() } catch (_: Exception) {}
                 _userMessage.emit("Failed to rotate video")
                 _statusMessage.value = "Error during video rotation"
             }

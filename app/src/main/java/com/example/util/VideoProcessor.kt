@@ -54,6 +54,9 @@ object VideoProcessor {
     ): Boolean = suspendCancellableCoroutine { continuation ->
         Log.d(TAG, "Executing FFmpeg command async: $cmd")
 
+        var maxReported = startProgress.coerceIn(0f, 1f)
+        onProgress(maxReported)
+
         val session = com.arthenica.ffmpegkit.FFmpegKit.executeAsync(
             cmd,
             { completedSession ->
@@ -73,8 +76,12 @@ object VideoProcessor {
                 if (durationMs > 0 && statistics != null) {
                     val timeMs = statistics.time.coerceAtLeast(0.0)
                     val progressFraction = (timeMs / durationMs.toDouble()).coerceIn(0.0, 0.99).toFloat()
-                    val currentP = startProgress + (endProgress - startProgress) * progressFraction
-                    onProgress(currentP)
+                    val currentP = (startProgress + (endProgress - startProgress) * progressFraction)
+                        .coerceIn(0f, 0.99f)
+                    if (currentP >= maxReported) {
+                        maxReported = currentP
+                        onProgress(currentP)
+                    }
                 }
             }
         )
@@ -88,6 +95,92 @@ object VideoProcessor {
             }
         }
     }
+
+    private data class ResolvedInput(
+        val path: String,
+        private val tempFile: File? = null,
+        private val pfd: ParcelFileDescriptor? = null
+    ) {
+        fun close() {
+            try { pfd?.close() } catch (_: Exception) {}
+            try {
+                if (tempFile != null && tempFile.exists()) {
+                    tempFile.delete()
+                }
+            } catch (_: Exception) {}
+        }
+    }
+
+    /**
+     * Resolves a source Uri into a filesystem path suitable for FFmpeg without leaking cache files or FDs.
+     */
+    private fun resolveInputForFfmpeg(
+        context: Context,
+        sourceUri: Uri,
+        allowProcFd: Boolean = false
+    ): ResolvedInput? {
+        if (sourceUri.scheme == "file" || sourceUri.scheme == null) {
+            val f = File(sourceUri.path ?: "")
+            if (f.exists() && f.canRead() && f.length() > 0) {
+                return ResolvedInput(path = f.absolutePath)
+            }
+        }
+
+        if (sourceUri.scheme == "content") {
+            try {
+                val proj = arrayOf(MediaStore.MediaColumns.DATA)
+                context.contentResolver.query(sourceUri, proj, null, null, null)?.use { cursor ->
+                    if (cursor.moveToFirst()) {
+                        val idx = cursor.getColumnIndex(MediaStore.MediaColumns.DATA)
+                        if (idx >= 0) {
+                            val path = cursor.getString(idx)
+                            if (!path.isNullOrBlank()) {
+                                val f = File(path)
+                                if (f.exists() && f.canRead() && f.length() > 0) {
+                                    return ResolvedInput(path = f.absolutePath)
+                                }
+                            }
+                        }
+                    }
+                }
+            } catch (_: Exception) {}
+
+            if (allowProcFd) {
+                try {
+                    val pfd = context.contentResolver.openFileDescriptor(sourceUri, "r")
+                    if (pfd != null) {
+                        val procFdPath = "/proc/self/fd/${pfd.fd}"
+                        if (File(procFdPath).exists()) {
+                            return ResolvedInput(path = procFdPath, pfd = pfd)
+                        }
+                        try { pfd.close() } catch (_: Exception) {}
+                    }
+                } catch (_: Exception) {}
+            }
+        }
+
+        val tempFile = File(
+            context.cacheDir,
+            "ffmpeg_input_${System.currentTimeMillis()}_${java.util.UUID.randomUUID().toString().take(6)}.mp4"
+        )
+        try {
+            context.contentResolver.openInputStream(sourceUri)?.use { input ->
+                tempFile.outputStream().use { output ->
+                    input.copyTo(output)
+                }
+            }
+        } catch (e: Exception) {
+            Log.e(TAG, "Error copying URI to temp file", e)
+        }
+        return if (tempFile.exists() && tempFile.length() > 0) {
+            ResolvedInput(path = tempFile.absolutePath, tempFile = tempFile)
+        } else {
+            try { if (tempFile.exists()) tempFile.delete() } catch (_: Exception) {}
+            null
+        }
+    }
+
+    private fun escapeConcatPath(path: String): String = path.replace("'", "'\\''")
 
     /**
      * Reads video metadata and generates a thumbnail.
@@ -105,8 +198,16 @@ object VideoProcessor {
         try {
             retriever.setDataSource(context, uri)
             durationMs = retriever.extractMetadata(MediaMetadataRetriever.METADATA_KEY_DURATION)?.toLongOrNull() ?: 0L
-            width = retriever.extractMetadata(MediaMetadataRetriever.METADATA_KEY_VIDEO_WIDTH)?.toIntOrNull() ?: 1280
-            height = retriever.extractMetadata(MediaMetadataRetriever.METADATA_KEY_VIDEO_HEIGHT)?.toIntOrNull() ?: 720
+            val rawW = retriever.extractMetadata(MediaMetadataRetriever.METADATA_KEY_VIDEO_WIDTH)?.toIntOrNull() ?: 1280
+            val rawH = retriever.extractMetadata(MediaMetadataRetriever.METADATA_KEY_VIDEO_HEIGHT)?.toIntOrNull() ?: 720
+            val rotDeg = retriever.extractMetadata(MediaMetadataRetriever.METADATA_KEY_VIDEO_ROTATION)?.toIntOrNull() ?: 0
+            if (rotDeg == 90 || rotDeg == 270) {
+                width = rawH
+                height = rawW
+            } else {
+                width = rawW
+                height = rawH
+            }
 
             // Safely retrieve thumbnail without requesting timestamps past video duration
             val targetUs = if (durationMs > 2000) 1_000_000L else 0L
@@ -121,7 +222,7 @@ object VideoProcessor {
                 } catch (_: Exception) { null }
 
             // Resolve size & path if possible
-            if (uri.scheme == "file" || uri.path?.startsWith("/") == true) {
+            if (uri.scheme == "file" || uri.scheme == null) {
                 val file = File(uri.path ?: "")
                 if (file.exists()) {
                     title = file.name
@@ -133,7 +234,7 @@ object VideoProcessor {
                     val nameIndex = cursor.getColumnIndex(android.provider.OpenableColumns.DISPLAY_NAME)
                     val sizeIndex = cursor.getColumnIndex(android.provider.OpenableColumns.SIZE)
                     if (cursor.moveToFirst()) {
-                        if (nameIndex != -1) title = cursor.getString(nameIndex)
+                        if (nameIndex != -1) title = cursor.getString(nameIndex) ?: title
                         if (sizeIndex != -1) sizeBytes = cursor.getLong(sizeIndex)
                     }
                 }
@@ -142,7 +243,7 @@ object VideoProcessor {
             if (sizeBytes <= 0L) {
                 try {
                     context.contentResolver.openFileDescriptor(uri, "r")?.use { pfd ->
-                        sizeBytes = pfd.statSize
+                        if (pfd.statSize > 0) sizeBytes = pfd.statSize
                     }
                 } catch (_: Exception) {}
             }
@@ -390,7 +491,7 @@ object VideoProcessor {
                 return@withContext false
             }
 
-            onProgress(0.1f)
+            onProgress(0f)
 
             if (outputFile.exists()) {
                 outputFile.delete()
@@ -400,70 +501,94 @@ object VideoProcessor {
                 val seg = finalKeepSegments[0]
                 val startSec = String.format(java.util.Locale.US, "%.3f", seg.startMs / 1000.0)
                 val endSec = String.format(java.util.Locale.US, "%.3f", seg.endMs / 1000.0)
+                val segDurMs = (seg.endMs - seg.startMs).coerceAtLeast(500L)
 
-                val cmd = "-y -ss $startSec -to $endSec -i \"$inputPath\" -c copy -avoid_negative_ts make_zero \"${outputFile.absolutePath}\""
+                val cmd = "-y -ss $startSec -to $endSec -i \"$inputPath\" -c copy -avoid_negative_ts make_zero -movflags +faststart \"${outputFile.absolutePath}\""
                 Log.d(TAG, "Executing FFmpeg single cut: $cmd")
 
-                val session = FFmpegKit.execute(cmd)
-                val success = ReturnCode.isSuccess(session.returnCode) && outputFile.exists() && outputFile.length() > 0
-                if (success) {
+                val ok = executeFFmpegAsyncWithProgress(
+                    cmd = cmd,
+                    durationMs = segDurMs,
+                    startProgress = 0f,
+                    endProgress = 0.99f,
+                    onProgress = onProgress
+                ) && outputFile.exists() && outputFile.length() > 0
+
+                if (ok) {
                     onProgress(1.0f)
                     Log.d(TAG, "FFmpeg single cut succeeded. Output size: ${outputFile.length()} bytes")
                     return@withContext true
                 } else {
-                    Log.w(TAG, "FFmpeg single cut failed with returnCode=${session.returnCode}")
+                    if (outputFile.exists()) outputFile.delete()
+                    Log.w(TAG, "FFmpeg single cut failed")
                     return@withContext false
                 }
             } else {
                 // Multi-segment concat
                 val tempSegmentFiles = mutableListOf<File>()
+                val totalSegs = finalKeepSegments.size.coerceAtLeast(1)
                 for ((index, seg) in finalKeepSegments.withIndex()) {
                     val startSec = String.format(java.util.Locale.US, "%.3f", seg.startMs / 1000.0)
                     val endSec = String.format(java.util.Locale.US, "%.3f", seg.endMs / 1000.0)
+                    val segDurMs = (seg.endMs - seg.startMs).coerceAtLeast(500L)
                     val segFile = File(context.cacheDir, "temp_ffmpeg_seg_${index}_${System.currentTimeMillis()}.mp4")
                     tempSegmentFiles.add(segFile)
 
+                    val segStartP = 0.85f * (index.toFloat() / totalSegs)
+                    val segEndP = 0.85f * ((index + 1).toFloat() / totalSegs)
                     val cmd = "-y -ss $startSec -to $endSec -i \"$inputPath\" -c copy -avoid_negative_ts make_zero \"${segFile.absolutePath}\""
-                    val session = FFmpegKit.execute(cmd)
-                    if (!ReturnCode.isSuccess(session.returnCode) || !segFile.exists() || segFile.length() == 0L) {
+                    val segOk = executeFFmpegAsyncWithProgress(
+                        cmd = cmd,
+                        durationMs = segDurMs,
+                        startProgress = segStartP,
+                        endProgress = segEndP,
+                        onProgress = onProgress
+                    ) && segFile.exists() && segFile.length() > 0
+                    if (!segOk) {
                         Log.w(TAG, "FFmpeg failed on segment $index")
                         tempSegmentFiles.forEach { it.delete() }
                         return@withContext false
                     }
-
-                    val progressRatio = 0.1f + 0.7f * ((index + 1).toFloat() / finalKeepSegments.size)
-                    onProgress(progressRatio)
                 }
 
-                // Create concat list file
+                // Create concat list file with safely escaped paths
                 val listFile = File(context.cacheDir, "concat_list_${System.currentTimeMillis()}.txt")
                 listFile.bufferedWriter().use { writer ->
                     for (file in tempSegmentFiles) {
-                        writer.write("file '${file.absolutePath}'\n")
+                        writer.write("file '${escapeConcatPath(file.absolutePath)}'\n")
                     }
                 }
 
-                val concatCmd = "-y -f concat -safe 0 -i \"${listFile.absolutePath}\" -c copy \"${outputFile.absolutePath}\""
+                val concatCmd = "-y -f concat -safe 0 -i \"${listFile.absolutePath}\" -c copy -movflags +faststart \"${outputFile.absolutePath}\""
                 Log.d(TAG, "Executing FFmpeg concat: $concatCmd")
 
-                val concatSession = FFmpegKit.execute(concatCmd)
+                val totalKeepMs = finalKeepSegments.sumOf { (it.endMs - it.startMs).coerceAtLeast(100L) }
+                val concatOk = executeFFmpegAsyncWithProgress(
+                    cmd = concatCmd,
+                    durationMs = totalKeepMs,
+                    startProgress = 0.85f,
+                    endProgress = 0.99f,
+                    onProgress = onProgress
+                )
 
                 // Cleanup segment and list files
                 tempSegmentFiles.forEach { it.delete() }
                 listFile.delete()
 
-                val success = ReturnCode.isSuccess(concatSession.returnCode) && outputFile.exists() && outputFile.length() > 0
+                val success = concatOk && outputFile.exists() && outputFile.length() > 0
                 if (success) {
                     onProgress(1.0f)
                     Log.d(TAG, "FFmpeg multi-segment cut succeeded. Output size: ${outputFile.length()} bytes")
                     return@withContext true
                 } else {
-                    Log.w(TAG, "FFmpeg concat failed with returnCode=${concatSession.returnCode}")
+                    if (outputFile.exists()) outputFile.delete()
+                    Log.w(TAG, "FFmpeg concat failed")
                     return@withContext false
                 }
             }
         } catch (t: Throwable) {
             Log.w(TAG, "FFmpeg processing failed with exception: ${t.message}", t)
+            if (outputFile.exists()) outputFile.delete()
             return@withContext false
         } finally {
             pfdToClose?.let {
@@ -848,16 +973,15 @@ object VideoProcessor {
 
     private fun createExtractor(context: Context, sourceUri: Uri): MediaExtractor {
         val extractor = MediaExtractor()
-        if (sourceUri.scheme == "file" || sourceUri.path?.startsWith("/") == true) {
-            val file = File(sourceUri.path!!)
+        if (sourceUri.scheme == "file" || sourceUri.scheme == null) {
+            val file = File(sourceUri.path ?: "")
             if (file.exists()) {
                 extractor.setDataSource(file.absolutePath)
                 return extractor
             }
         }
         try {
-            val pfd = context.contentResolver.openFileDescriptor(sourceUri, "r")
-            if (pfd != null) {
+            context.contentResolver.openFileDescriptor(sourceUri, "r")?.use { pfd ->
                 extractor.setDataSource(pfd.fileDescriptor)
                 return extractor
             }
@@ -867,9 +991,94 @@ object VideoProcessor {
         return extractor
     }
 
+    fun normalizeEncodingPreset(speedPreset: String): String {
+        return when (speedPreset.trim().lowercase()) {
+            "ultrafast", "superfast", "veryfast", "faster", "fast", "medium", "slow", "slower", "veryslow" ->
+                speedPreset.trim().lowercase()
+            else -> "medium"
+        }
+    }
+
     /**
-     * Advanced Video Compressor Engine: Performs real re-encoding using Android hardware codecs (h264_mediacodec),
-     * FFmpeg mpeg4/libx264 codecs with calculated target bitrates based on CRF and user target size.
+     * Computes target resolution scaling factor and max pixel bounds for estimation and FFmpeg filters.
+     */
+    fun resolveTargetDimensions(srcWidth: Int, srcHeight: Int, targetResolution: String): Pair<Int, Int> {
+        val safeW = srcWidth.coerceAtLeast(2)
+        val safeH = srcHeight.coerceAtLeast(2)
+        val maxBox = when {
+            targetResolution.contains("1080p") -> 1920 to 1080
+            targetResolution.contains("720p") -> 1280 to 720
+            targetResolution.contains("480p") -> 854 to 480
+            targetResolution.contains("360p") -> 640 to 360
+            else -> return ((safeW / 2) * 2).coerceAtLeast(2) to ((safeH / 2) * 2).coerceAtLeast(2)
+        }
+        // Respect orientation when checking fit
+        val targetLong = maxOf(maxBox.first, maxBox.second).toDouble()
+        val targetShort = minOf(maxBox.first, maxBox.second).toDouble()
+        val srcLong = maxOf(safeW, safeH).toDouble()
+        val srcShort = minOf(safeW, safeH).toDouble()
+
+        val scale = minOf(targetLong / srcLong, targetShort / srcShort, 1.0)
+        val outW = (((safeW * scale).toInt() / 2) * 2).coerceAtLeast(2)
+        val outH = (((safeH * scale).toInt() / 2) * 2).coerceAtLeast(2)
+        return outW to outH
+    }
+
+    /**
+     * Estimates compressed output size (in bytes) consistently with the FFmpeg CRF/preset/resolution encoder.
+     */
+    fun estimateCompressedSizeBytes(
+        originalSizeBytes: Long,
+        durationMs: Long,
+        srcWidth: Int,
+        srcHeight: Int,
+        method: com.example.model.CompressionMethod,
+        crf: Int,
+        speedPreset: String,
+        targetSizeBytes: Long,
+        targetResolution: String
+    ): Long {
+        if (originalSizeBytes <= 0L) return 0L
+        return when (method) {
+            com.example.model.CompressionMethod.STREAM_COPY -> (originalSizeBytes * 0.98).toLong()
+            com.example.model.CompressionMethod.TARGET_SIZE -> {
+                val minTarget = (originalSizeBytes * 0.05).toLong().coerceAtLeast(100_000L)
+                val maxTarget = originalSizeBytes.coerceAtLeast(minTarget)
+                if (targetSizeBytes > 0L) targetSizeBytes.coerceIn(minTarget, maxTarget) else (originalSizeBytes * 0.50).toLong()
+            }
+            com.example.model.CompressionMethod.H264_CRF, com.example.model.CompressionMethod.HEVC_H265 -> {
+                val safeCrf = crf.coerceIn(18, 36)
+                // Exponential x264 rate-distortion curve (+6-7 CRF roughly halves video bitrate)
+                val baseCrfRatio = Math.pow(0.5, (safeCrf - 18) / 7.2).coerceIn(0.10, 0.94)
+                val codecEfficiency = if (method == com.example.model.CompressionMethod.HEVC_H265) 0.72 else 1.0
+                val presetFactor = when (normalizeEncodingPreset(speedPreset)) {
+                    "ultrafast" -> 1.14
+                    "superfast", "veryfast", "faster" -> 1.08
+                    "fast" -> 1.04
+                    "slow", "slower", "veryslow" -> 0.92
+                    else -> 1.0
+                }
+
+                val (outW, outH) = resolveTargetDimensions(srcWidth, srcHeight, targetResolution)
+                val srcPixels = (srcWidth.coerceAtLeast(2).toDouble() * srcHeight.coerceAtLeast(2).toDouble())
+                val outPixels = (outW.toDouble() * outH.toDouble())
+                val resFactor = Math.pow((outPixels / srcPixels).coerceIn(0.12, 1.0), 0.72)
+
+                val durSec = (durationMs / 1000.0).coerceAtLeast(1.0)
+                val audioKbps = if (safeCrf >= 26 || method == com.example.model.CompressionMethod.HEVC_H265) 96.0 else 128.0
+                val estAudioBytes = (audioKbps * 1024.0 / 8.0) * durSec
+                val estSrcVideoBytes = (originalSizeBytes - estAudioBytes).coerceAtLeast(originalSizeBytes * 0.75)
+
+                val estVideoBytes = estSrcVideoBytes * baseCrfRatio * codecEfficiency * presetFactor * resFactor
+                val totalEst = (estVideoBytes + estAudioBytes).toLong()
+                totalEst.coerceIn((originalSizeBytes * 0.05).toLong().coerceAtLeast(50_000L), (originalSizeBytes * 0.98).toLong())
+            }
+        }
+    }
+
+    /**
+     * Advanced Video Compressor Engine: Prioritizes real GPL libx264 / libx265 CRF + preset encoding
+     * with hardware MediaCodec & mpeg4 fallbacks, starting smoothly from 0% progress.
      */
     suspend fun compressVideoWithEngine(
         context: Context,
@@ -882,128 +1091,180 @@ object VideoProcessor {
         targetResolution: String = "Original Resolution",
         onProgress: (Float) -> Unit = {}
     ): Boolean = withContext(Dispatchers.IO) {
-        val resolvedFile = getLocalFilePathOrTemp(context, sourceUri)
-        val inputPath = resolvedFile.absolutePath
-        val inputSizeBytes = resolvedFile.length().coerceAtLeast(100_000L)
+        onProgress(0f)
+        val resolvedInput = resolveInputForFfmpeg(context, sourceUri, allowProcFd = false) ?: return@withContext false
+        try {
+            val inputPath = resolvedInput.path
+            val inputFile = File(inputPath)
+            val inputSizeBytes = inputFile.length().coerceAtLeast(100_000L)
 
-        if (outputFile.exists()) {
-            outputFile.delete()
-        }
+            if (outputFile.exists()) {
+                outputFile.delete()
+            }
+            outputFile.parentFile?.mkdirs()
 
-        if (method == com.example.model.CompressionMethod.STREAM_COPY) {
-            val copyCmd = "-y -i \"$inputPath\" -c copy \"${outputFile.absolutePath}\""
-            val session = FFmpegKit.execute(copyCmd)
-            val success = ReturnCode.isSuccess(session.returnCode) && outputFile.exists() && outputFile.length() > 0
-            if (success) onProgress(1.0f)
-            return@withContext success
-        }
-
-        // Calculate source video duration
-        val durationMs = try {
+            // Calculate source video duration & dimensions
+            var durationMs = 10000L
+            var srcW = 1280
+            var srcH = 720
             val retriever = MediaMetadataRetriever()
-            retriever.setDataSource(context, sourceUri)
-            val dur = retriever.extractMetadata(MediaMetadataRetriever.METADATA_KEY_DURATION)?.toLongOrNull() ?: 10000L
-            retriever.release()
-            dur
-        } catch (_: Exception) { 10000L }
-
-        val durSec = (durationMs / 1000.0).coerceAtLeast(1.0)
-        val inputBitrateKbps = ((inputSizeBytes * 8.0 / 1024.0) / durSec).toInt()
-
-        // Calculate target bitrate based on selected method and CRF
-        val targetVideoBitrateKbps = when (method) {
-            com.example.model.CompressionMethod.H264_CRF -> {
-                // CRF 18 -> ~80% bitrate, CRF 23 -> ~50% bitrate, CRF 29 -> ~30% bitrate, CRF 36 -> ~15% bitrate
-                val ratio = (1.0 - (crf - 18) * 0.038).coerceIn(0.12, 0.85)
-                (inputBitrateKbps * ratio).toInt().coerceAtLeast(180)
+            try {
+                retriever.setDataSource(inputPath)
+                durationMs = retriever.extractMetadata(MediaMetadataRetriever.METADATA_KEY_DURATION)?.toLongOrNull() ?: 10000L
+                val rawW = retriever.extractMetadata(MediaMetadataRetriever.METADATA_KEY_VIDEO_WIDTH)?.toIntOrNull() ?: 1280
+                val rawH = retriever.extractMetadata(MediaMetadataRetriever.METADATA_KEY_VIDEO_HEIGHT)?.toIntOrNull() ?: 720
+                val rotDeg = retriever.extractMetadata(MediaMetadataRetriever.METADATA_KEY_VIDEO_ROTATION)?.toIntOrNull() ?: 0
+                if (rotDeg == 90 || rotDeg == 270) {
+                    srcW = rawH
+                    srcH = rawW
+                } else {
+                    srcW = rawW
+                    srcH = rawH
+                }
+            } catch (_: Exception) {
+            } finally {
+                try { retriever.release() } catch (_: Exception) {}
             }
-            com.example.model.CompressionMethod.HEVC_H265 -> {
-                // HEVC offers higher efficiency
-                val ratio = (1.0 - (crf - 18) * 0.045).coerceIn(0.08, 0.75)
-                (inputBitrateKbps * ratio).toInt().coerceAtLeast(150)
+
+            val totalMs = durationMs.coerceAtLeast(1000L)
+
+            if (method == com.example.model.CompressionMethod.STREAM_COPY) {
+                val copyCmd = "-y -i \"$inputPath\" -map 0:v:0 -map 0:a? -sn -dn -c copy -movflags +faststart \"${outputFile.absolutePath}\""
+                val success = executeFFmpegAsyncWithProgress(
+                    cmd = copyCmd,
+                    durationMs = totalMs,
+                    startProgress = 0f,
+                    endProgress = 0.99f,
+                    onProgress = onProgress
+                ) && outputFile.exists() && outputFile.length() > 0
+                if (success) {
+                    onProgress(1.0f)
+                } else if (outputFile.exists()) {
+                    outputFile.delete()
+                }
+                return@withContext success
             }
-            com.example.model.CompressionMethod.TARGET_SIZE -> {
-                val targetBytesToUse = if (targetSizeBytes > 0) targetSizeBytes else (inputSizeBytes * 0.50).toLong()
-                val totalKbps = ((targetBytesToUse * 8.0 / 1024.0) / durSec).toInt()
-                (totalKbps - 128).coerceAtLeast(150)
+
+            val durSec = (durationMs / 1000.0).coerceAtLeast(1.0)
+            val safeCrf = crf.coerceIn(18, 36)
+            val safePreset = normalizeEncodingPreset(speedPreset)
+
+            val audioKbps = when {
+                method == com.example.model.CompressionMethod.TARGET_SIZE -> {
+                    val targetBytes = if (targetSizeBytes > 0) targetSizeBytes else (inputSizeBytes * 0.50).toLong()
+                    val totalKbps = ((targetBytes * 8.0 / 1024.0) / durSec).toInt()
+                    if (totalKbps < 500) 64 else 96
+                }
+                safeCrf >= 26 || method == com.example.model.CompressionMethod.HEVC_H265 -> 96
+                else -> 128
             }
-            else -> (inputBitrateKbps * 0.5).toInt()
-        }
 
-        var scaleFilter = ""
-        if (targetResolution.contains("1080p")) {
-            scaleFilter = "-vf scale=w=1920:h=1080:force_original_aspect_ratio=decrease,pad=ceil(iw/2)*2:ceil(ih/2)*2"
-        } else if (targetResolution.contains("720p")) {
-            scaleFilter = "-vf scale=w=1280:h=720:force_original_aspect_ratio=decrease,pad=ceil(iw/2)*2:ceil(ih/2)*2"
-        } else if (targetResolution.contains("480p")) {
-            scaleFilter = "-vf scale=w=854:h=480:force_original_aspect_ratio=decrease,pad=ceil(iw/2)*2:ceil(ih/2)*2"
-        } else if (targetResolution.contains("360p")) {
-            scaleFilter = "-vf scale=w=640:h=360:force_original_aspect_ratio=decrease,pad=ceil(iw/2)*2:ceil(ih/2)*2"
-        }
+            // Compute target video bitrate for TARGET_SIZE mode and hardware fallback encoders
+            val targetVideoBitrateKbps = when (method) {
+                com.example.model.CompressionMethod.TARGET_SIZE -> {
+                    val targetBytesToUse = if (targetSizeBytes > 0) targetSizeBytes else (inputSizeBytes * 0.50).toLong()
+                    val usableBytes = (targetBytesToUse * 0.97).toLong() // Reserve ~3% for MP4 container overhead
+                    val totalKbps = ((usableBytes * 8.0 / 1024.0) / durSec).toInt()
+                    (totalKbps - audioKbps).coerceAtLeast(120)
+                }
+                else -> {
+                    val estTotalBytes = estimateCompressedSizeBytes(
+                        originalSizeBytes = inputSizeBytes,
+                        durationMs = durationMs,
+                        srcWidth = srcW,
+                        srcHeight = srcH,
+                        method = method,
+                        crf = safeCrf,
+                        speedPreset = safePreset,
+                        targetSizeBytes = targetSizeBytes,
+                        targetResolution = targetResolution
+                    )
+                    val totalKbps = ((estTotalBytes * 8.0 / 1024.0) / durSec).toInt()
+                    (totalKbps - audioKbps).coerceAtLeast(150)
+                }
+            }
 
-        val vf = if (scaleFilter.isNotEmpty()) " $scaleFilter" else ""
+            val scaleFilter = when {
+                targetResolution.contains("1080p") ||
+                    targetResolution.contains("720p") ||
+                    targetResolution.contains("480p") ||
+                    targetResolution.contains("360p") -> {
+                    val (tw, th) = resolveTargetDimensions(srcW, srcH, targetResolution)
+                    "-vf scale=w=$tw:h=$th"
+                }
+                else -> ""
+            }
+            val vf = if (scaleFilter.isNotEmpty()) " $scaleFilter" else ""
+            val streamMap = "-map 0:v:0 -map 0:a? -sn -dn"
 
-        val candidateCmds = if (method == com.example.model.CompressionMethod.HEVC_H265) {
-            listOf(
-                // 1. Android Hardware MediaCodec HEVC/H.265 Encoder
-                "-y -i \"$inputPath\" -c:v hevc_mediacodec -b:v ${targetVideoBitrateKbps}k$vf -c:a aac -b:a 128k \"${outputFile.absolutePath}\"",
-                // 2. Fallback to Hardware H.264
-                "-y -i \"$inputPath\" -c:v h264_mediacodec -b:v ${targetVideoBitrateKbps}k$vf -c:a aac -b:a 128k \"${outputFile.absolutePath}\"",
-                // 3. Fallback to MPEG-4
-                "-y -i \"$inputPath\" -c:v mpeg4 -b:v ${targetVideoBitrateKbps}k$vf -c:a aac -b:a 128k \"${outputFile.absolutePath}\""
-            )
-        } else {
-            listOf(
-                // 1. Android Hardware MediaCodec H.264 Encoder
-                "-y -i \"$inputPath\" -c:v h264_mediacodec -b:v ${targetVideoBitrateKbps}k$vf -c:a aac -b:a 128k \"${outputFile.absolutePath}\"",
-                // 2. FFmpeg Software MPEG-4 Encoder
-                "-y -i \"$inputPath\" -c:v mpeg4 -b:v ${targetVideoBitrateKbps}k$vf -c:a aac -b:a 128k \"${outputFile.absolutePath}\"",
-                // 3. Software x264 CRF
-                "-y -i \"$inputPath\" -c:v libx264 -crf $crf -preset $speedPreset$vf -c:a aac -b:a 128k \"${outputFile.absolutePath}\""
-            )
-        }
+            val candidateCmds = when (method) {
+                com.example.model.CompressionMethod.HEVC_H265 -> listOf(
+                    // 1. Real Software libx265 CRF + preset (true CRF & preset fidelity)
+                    "-y -i \"$inputPath\" $streamMap -c:v libx265 -crf $safeCrf -preset $safePreset -tag:v hvc1$vf -pix_fmt yuv420p -c:a aac -b:a ${audioKbps}k -movflags +faststart \"${outputFile.absolutePath}\"",
+                    // 2. Fallback: Android Hardware MediaCodec HEVC
+                    "-y -i \"$inputPath\" $streamMap -c:v hevc_mediacodec -b:v ${targetVideoBitrateKbps}k -tag:v hvc1$vf -pix_fmt yuv420p -c:a aac -b:a ${audioKbps}k -movflags +faststart \"${outputFile.absolutePath}\"",
+                    // 3. Fallback: Software x264 CRF
+                    "-y -i \"$inputPath\" $streamMap -c:v libx264 -crf $safeCrf -preset $safePreset$vf -pix_fmt yuv420p -c:a aac -b:a ${audioKbps}k -movflags +faststart \"${outputFile.absolutePath}\"",
+                    // 4. Fallback: Hardware H.264
+                    "-y -i \"$inputPath\" $streamMap -c:v h264_mediacodec -b:v ${targetVideoBitrateKbps}k$vf -c:a aac -b:a ${audioKbps}k -movflags +faststart \"${outputFile.absolutePath}\""
+                )
+                com.example.model.CompressionMethod.TARGET_SIZE -> {
+                    val maxRate = (targetVideoBitrateKbps * 1.15).toInt().coerceAtLeast(targetVideoBitrateKbps + 50)
+                    val bufSize = (targetVideoBitrateKbps * 2).coerceAtLeast(400)
+                    listOf(
+                        // 1. Software x264 constrained ABR to hit target MB accurately
+                        "-y -i \"$inputPath\" $streamMap -c:v libx264 -b:v ${targetVideoBitrateKbps}k -maxrate ${maxRate}k -bufsize ${bufSize}k -preset $safePreset$vf -pix_fmt yuv420p -c:a aac -b:a ${audioKbps}k -movflags +faststart \"${outputFile.absolutePath}\"",
+                        // 2. Fallback: Android Hardware MediaCodec H.264
+                        "-y -i \"$inputPath\" $streamMap -c:v h264_mediacodec -b:v ${targetVideoBitrateKbps}k$vf -c:a aac -b:a ${audioKbps}k -movflags +faststart \"${outputFile.absolutePath}\"",
+                        // 3. Fallback: MPEG-4
+                        "-y -i \"$inputPath\" $streamMap -c:v mpeg4 -b:v ${targetVideoBitrateKbps}k$vf -c:a aac -b:a ${audioKbps}k -movflags +faststart \"${outputFile.absolutePath}\""
+                    )
+                }
+                else -> listOf(
+                    // 1. Real Software libx264 CRF + preset (honors exact CRF 28 & Fast preset!)
+                    "-y -i \"$inputPath\" $streamMap -c:v libx264 -crf $safeCrf -preset $safePreset$vf -pix_fmt yuv420p -c:a aac -b:a ${audioKbps}k -movflags +faststart \"${outputFile.absolutePath}\"",
+                    // 2. Fallback: Android Hardware MediaCodec H.264
+                    "-y -i \"$inputPath\" $streamMap -c:v h264_mediacodec -b:v ${targetVideoBitrateKbps}k$vf -c:a aac -b:a ${audioKbps}k -movflags +faststart \"${outputFile.absolutePath}\"",
+                    // 3. Fallback: MPEG-4
+                    "-y -i \"$inputPath\" $streamMap -c:v mpeg4 -b:v ${targetVideoBitrateKbps}k$vf -c:a aac -b:a ${audioKbps}k -movflags +faststart \"${outputFile.absolutePath}\""
+                )
+            }
 
-        onProgress(0.1f)
-        var encodeSuccess = false
-        val totalMs = (durSec * 1000.0).toLong().coerceAtLeast(1000L)
+            var encodeSuccess = false
+            for (cmd in candidateCmds) {
+                if (outputFile.exists()) outputFile.delete()
+                Log.d(TAG, "Trying compression command: $cmd")
+                val success = executeFFmpegAsyncWithProgress(
+                    cmd = cmd,
+                    durationMs = totalMs,
+                    startProgress = 0f,
+                    endProgress = 0.99f,
+                    onProgress = onProgress
+                )
+                if (success && outputFile.exists() && outputFile.length() > 0) {
+                    Log.d(TAG, "Compression re-encoding succeeded! Output size: ${outputFile.length()} bytes")
+                    encodeSuccess = true
+                    break
+                } else {
+                    if (outputFile.exists()) outputFile.delete()
+                    Log.w(TAG, "Encoder failed or was cancelled")
+                }
+            }
 
-        for (cmd in candidateCmds) {
+            if (encodeSuccess) {
+                onProgress(1.0f)
+                return@withContext true
+            }
+
+            // Do not silently return copy on user cancellation; only if coroutine still active
+            return@withContext false
+        } catch (e: Exception) {
+            Log.e(TAG, "Compression error", e)
             if (outputFile.exists()) outputFile.delete()
-            Log.d(TAG, "Trying compression command: $cmd")
-            val success = executeFFmpegAsyncWithProgress(
-                cmd = cmd,
-                durationMs = totalMs,
-                startProgress = 0.1f,
-                endProgress = 0.95f,
-                onProgress = onProgress
-            )
-            if (success && outputFile.exists() && outputFile.length() > 0) {
-                Log.d(TAG, "Compression re-encoding succeeded! Output size: ${outputFile.length()} bytes")
-                encodeSuccess = true
-                break
-            } else {
-                Log.w(TAG, "Encoder failed or was cancelled")
-            }
+            return@withContext false
+        } finally {
+            resolvedInput.close()
         }
-
-        if (encodeSuccess) {
-            onProgress(1.0f)
-            return@withContext true
-        }
-
-        // Fallback: If re-encoding fails on device, execute stream copy
-        Log.w(TAG, "All re-encoders failed, falling back to stream copy")
-        if (outputFile.exists()) outputFile.delete()
-        val copyCmd = "-y -i \"$inputPath\" -c copy \"${outputFile.absolutePath}\""
-        val copySuccess = executeFFmpegAsyncWithProgress(
-            cmd = copyCmd,
-            durationMs = totalMs,
-            startProgress = 0.95f,
-            endProgress = 1.0f,
-            onProgress = onProgress
-        ) && outputFile.exists() && outputFile.length() > 0
-        if (copySuccess) onProgress(1.0f)
-        return@withContext copySuccess
     }
 
     /**
@@ -1022,27 +1283,28 @@ object VideoProcessor {
     }
 
     fun formatDuration(ms: Long): String {
-        val totalSeconds = ms / 1000
+        val totalSeconds = (ms / 1000).coerceAtLeast(0L)
         val hours = totalSeconds / 3600
         val minutes = (totalSeconds % 3600) / 60
         val seconds = totalSeconds % 60
         return if (hours > 0) {
-            String.format("%02d:%02d:%02d", hours, minutes, seconds)
+            String.format(java.util.Locale.US, "%02d:%02d:%02d", hours, minutes, seconds)
         } else {
-            String.format("%02d:%02d", minutes, seconds)
+            String.format(java.util.Locale.US, "%02d:%02d", minutes, seconds)
         }
     }
 
     fun formatDurationPrecise(ms: Long): String {
-        val totalSeconds = ms / 1000
+        val safeMs = ms.coerceAtLeast(0L)
+        val totalSeconds = safeMs / 1000
         val hours = totalSeconds / 3600
         val minutes = (totalSeconds % 3600) / 60
         val seconds = totalSeconds % 60
-        val millis = (ms % 1000)
+        val millis = (safeMs % 1000)
         return if (hours > 0) {
-            String.format("%02d:%02d:%02d.%03d", hours, minutes, seconds, millis)
+            String.format(java.util.Locale.US, "%02d:%02d:%02d.%03d", hours, minutes, seconds, millis)
         } else {
-            String.format("%02d:%02d.%03d", minutes, seconds, millis)
+            String.format(java.util.Locale.US, "%02d:%02d.%03d", minutes, seconds, millis)
         }
     }
 
@@ -1052,9 +1314,9 @@ object VideoProcessor {
         val mb = kb / 1024.0
         val gb = mb / 1024.0
         return when {
-            gb >= 1.0 -> String.format("%.2f GB", gb)
-            mb >= 1.0 -> String.format("%.1f MB", mb)
-            kb >= 1.0 -> String.format("%.0f KB", kb)
+            gb >= 1.0 -> String.format(java.util.Locale.US, "%.2f GB", gb)
+            mb >= 1.0 -> String.format(java.util.Locale.US, "%.1f MB", mb)
+            kb >= 1.0 -> String.format(java.util.Locale.US, "%.0f KB", kb)
             else -> "$bytes B"
         }
     }
@@ -1096,9 +1358,26 @@ object VideoProcessor {
      * Helper to resolve local file path for a URI or copy to cache if needed.
      */
     suspend fun getLocalFilePathOrTemp(context: Context, uri: Uri): File = withContext(Dispatchers.IO) {
-        if (uri.scheme == "file" || uri.path?.startsWith("/") == true) {
+        if (uri.scheme == "file" || uri.scheme == null) {
             val f = File(uri.path ?: "")
             if (f.exists() && f.length() > 0) return@withContext f
+        }
+        if (uri.scheme == "content") {
+            try {
+                val proj = arrayOf(MediaStore.MediaColumns.DATA)
+                context.contentResolver.query(uri, proj, null, null, null)?.use { cursor ->
+                    if (cursor.moveToFirst()) {
+                        val idx = cursor.getColumnIndex(MediaStore.MediaColumns.DATA)
+                        if (idx >= 0) {
+                            val path = cursor.getString(idx)
+                            if (!path.isNullOrBlank()) {
+                                val f = File(path)
+                                if (f.exists() && f.canRead() && f.length() > 0) return@withContext f
+                            }
+                        }
+                    }
+                }
+            } catch (_: Exception) {}
         }
         val tempFile = File(context.cacheDir, "resolved_v_${System.currentTimeMillis()}_${java.util.UUID.randomUUID().toString().take(6)}.mp4")
         try {
@@ -1129,7 +1408,7 @@ object VideoProcessor {
 
         val tempFilesToClean = mutableListOf<File>()
         try {
-            onProgress(0.05f)
+            onProgress(0f)
             val resolvedFiles = mutableListOf<File>()
             for (item in videoItems) {
                 val f = getLocalFilePathOrTemp(context, item.uri)
@@ -1142,6 +1421,7 @@ object VideoProcessor {
             if (outputFile.exists()) {
                 outputFile.delete()
             }
+            outputFile.parentFile?.mkdirs()
 
             val totalDurationMs = videoItems.sumOf { it.durationMs }.coerceAtLeast(1000L)
 
@@ -1151,18 +1431,25 @@ object VideoProcessor {
                 tempFilesToClean.add(concatListFile)
                 concatListFile.bufferedWriter().use { writer ->
                     for (file in resolvedFiles) {
-                        writer.write("file '${file.absolutePath}'\n")
+                        writer.write("file '${escapeConcatPath(file.absolutePath)}'\n")
                     }
                 }
 
-                val fastCmd = "-y -f concat -safe 0 -i \"${concatListFile.absolutePath}\" -c copy \"${outputFile.absolutePath}\""
+                val fastCmd = "-y -f concat -safe 0 -i \"${concatListFile.absolutePath}\" -c copy -movflags +faststart \"${outputFile.absolutePath}\""
                 Log.d(TAG, "Executing fast join: $fastCmd")
-                val session = FFmpegKit.execute(fastCmd)
+                val fastOk = executeFFmpegAsyncWithProgress(
+                    cmd = fastCmd,
+                    durationMs = totalDurationMs,
+                    startProgress = 0f,
+                    endProgress = 0.99f,
+                    onProgress = onProgress
+                ) && outputFile.exists() && outputFile.length() > 0
 
-                if (ReturnCode.isSuccess(session.returnCode) && outputFile.exists() && outputFile.length() > 0) {
+                if (fastOk) {
                     onProgress(1.0f)
                     return@withContext true
                 } else {
+                    if (outputFile.exists()) outputFile.delete()
                     Log.w(TAG, "Fast merge failed, falling back to re-encode join")
                 }
             }
@@ -1184,7 +1471,6 @@ object VideoProcessor {
             val audioFlags = resolvedFiles.map { checkAudio(it) }
 
             // 3. Determine target dimensions based on input orientations and rotation transforms
-            onProgress(0.1f)
             fun getEffectiveDimensions(item: VideoItem): Pair<Int, Int> {
                 val normDeg = ((item.rotationDegrees % 360) + 360) % 360
                 return if (normDeg == 90 || normDeg == 270) {
@@ -1219,7 +1505,7 @@ object VideoProcessor {
 
             for ((i, file) in resolvedFiles.withIndex()) {
                 inputsBuilder.append("-i \"${file.absolutePath}\" ")
-                
+
                 // Build per-item rotation and flip filters
                 val itemFilters = mutableListOf<String>()
                 val normDeg = ((videoItems[i].rotationDegrees % 360) + 360) % 360
@@ -1252,9 +1538,9 @@ object VideoProcessor {
             val inStr = inputsBuilder.toString().trim()
 
             val candidateEncoders = listOf(
-                "-c:v libx264 -preset ultrafast -crf 23 -c:a aac -b:a 128k -pix_fmt yuv420p -movflags +faststart",
+                "-c:v libx264 -preset fast -crf 23 -c:a aac -b:a 128k -pix_fmt yuv420p -movflags +faststart",
                 "-c:v h264_mediacodec -b:v 4M -c:a aac -b:a 128k -pix_fmt yuv420p -movflags +faststart",
-                "-c:v mpeg4 -b:v 4M -c:a aac -b:a 128k",
+                "-c:v mpeg4 -b:v 4M -c:a aac -b:a 128k -movflags +faststart",
                 "-c:v h264 -c:a aac"
             )
 
@@ -1267,8 +1553,8 @@ object VideoProcessor {
                 success = executeFFmpegAsyncWithProgress(
                     cmd = reencodeCmd,
                     durationMs = totalDurationMs,
-                    startProgress = 0.1f,
-                    endProgress = 0.98f,
+                    startProgress = 0f,
+                    endProgress = 0.99f,
                     onProgress = onProgress
                 ) && outputFile.exists() && outputFile.length() > 0
 
@@ -1276,11 +1562,12 @@ object VideoProcessor {
                     Log.d(TAG, "Re-encode join succeeded with encoder: $enc")
                     break
                 } else {
+                    if (outputFile.exists()) outputFile.delete()
                     Log.w(TAG, "Re-encode join failed with encoder: $enc")
                 }
             }
 
-            // Fallback 4: Sequential intermediate segment normalization if complex filter graph fails
+            // Fallback: Sequential intermediate segment normalization if complex filter graph fails
             if (!success) {
                 Log.w(TAG, "Full multi-input filter complex failed, attempting intermediate segment normalization")
                 val intermediateFiles = mutableListOf<File>()
@@ -1292,7 +1579,7 @@ object VideoProcessor {
 
                     val itemDurMs = videoItems[i].durationMs.coerceAtLeast(500L)
                     val hasAud = audioFlags[i]
-                    
+
                     val itemFilters = mutableListOf<String>()
                     val normDeg = ((videoItems[i].rotationDegrees % 360) + 360) % 360
                     when (normDeg) {
@@ -1306,25 +1593,37 @@ object VideoProcessor {
                     val vfParam = "${rotFilterPrefix}scale=w=$targetW:h=$targetH:force_original_aspect_ratio=decrease,pad=$targetW:$targetH:(ow-iw)/2:(oh-ih)/2:black,setsar=1,fps=30,format=yuv420p"
 
                     val singleCmd = if (hasAud) {
-                        "-y -i \"${file.absolutePath}\" -vf \"$vfParam\" -c:v libx264 -preset ultrafast -crf 23 -c:a aac -ar 44100 -ac 2 -f mpegts \"${interFile.absolutePath}\""
+                        "-y -i \"${file.absolutePath}\" -vf \"$vfParam\" -c:v libx264 -preset fast -crf 23 -c:a aac -ar 44100 -ac 2 -f mpegts \"${interFile.absolutePath}\""
                     } else {
                         val durSec = String.format(java.util.Locale.US, "%.3f", itemDurMs / 1000.0)
-                        "-y -i \"${file.absolutePath}\" -f lavfi -i anullsrc=r=44100:cl=stereo -vf \"$vfParam\" -c:v libx264 -preset ultrafast -crf 23 -c:a aac -ar 44100 -ac 2 -t $durSec -f mpegts \"${interFile.absolutePath}\""
+                        "-y -i \"${file.absolutePath}\" -f lavfi -i anullsrc=r=44100:cl=stereo -vf \"$vfParam\" -c:v libx264 -preset fast -crf 23 -c:a aac -ar 44100 -ac 2 -t $durSec -f mpegts \"${interFile.absolutePath}\""
                     }
 
-                    val interSuccess = FFmpegKit.execute(singleCmd)
-                    if (!ReturnCode.isSuccess(interSuccess.returnCode) || !interFile.exists() || interFile.length() == 0L) {
+                    val segStart = 0.85f * (i.toFloat() / resolvedFiles.size)
+                    val segEnd = 0.85f * ((i + 1f) / resolvedFiles.size)
+                    val interOk = executeFFmpegAsyncWithProgress(
+                        cmd = singleCmd,
+                        durationMs = itemDurMs,
+                        startProgress = segStart,
+                        endProgress = segEnd,
+                        onProgress = onProgress
+                    ) && interFile.exists() && interFile.length() > 0
+                    if (!interOk) {
                         allTranscoded = false
                         break
                     }
-                    onProgress(0.1f + 0.8f * ((i + 1f) / resolvedFiles.size))
                 }
 
                 if (allTranscoded && intermediateFiles.all { it.exists() && it.length() > 0 }) {
                     val concatStr = intermediateFiles.joinToString("|") { it.absolutePath }
                     val finalMergeCmd = "-y -i \"concat:$concatStr\" -c copy -bsf:a aac_adtstoasc -movflags +faststart \"${outputFile.absolutePath}\""
-                    val finalSession = FFmpegKit.execute(finalMergeCmd)
-                    success = ReturnCode.isSuccess(finalSession.returnCode) && outputFile.exists() && outputFile.length() > 0
+                    success = executeFFmpegAsyncWithProgress(
+                        cmd = finalMergeCmd,
+                        durationMs = totalDurationMs,
+                        startProgress = 0.85f,
+                        endProgress = 0.99f,
+                        onProgress = onProgress
+                    ) && outputFile.exists() && outputFile.length() > 0
                 }
             }
 
@@ -1332,11 +1631,13 @@ object VideoProcessor {
                 onProgress(1.0f)
                 return@withContext true
             } else {
+                if (outputFile.exists()) outputFile.delete()
                 Log.e(TAG, "All join strategies failed")
                 return@withContext false
             }
         } catch (e: Exception) {
             Log.e(TAG, "Join videos exception", e)
+            if (outputFile.exists()) outputFile.delete()
             return@withContext false
         } finally {
             tempFilesToClean.forEach { if (it.exists()) it.delete() }
@@ -1362,7 +1663,7 @@ object VideoProcessor {
     ): Boolean = withContext(Dispatchers.IO) {
         val tempFilesToClean = mutableListOf<File>()
         try {
-            onProgress(0.1f)
+            onProgress(0f)
             val inputFile = getLocalFilePathOrTemp(context, sourceUri)
             if (inputFile.parentFile == context.cacheDir) {
                 tempFilesToClean.add(inputFile)
@@ -1392,14 +1693,17 @@ object VideoProcessor {
                 return@withContext true
             }
 
-            val vfArg = if (filters.isNotEmpty()) "-vf ${filters.joinToString(",")}" else ""
+            // Ensure even dimensions & yuv420p compatibility after rotation/flip
+            filters.add("scale=ceil(iw/2)*2:ceil(ih/2)*2")
+            filters.add("format=yuv420p")
+            val vfArg = "-vf \"${filters.joinToString(",")}\""
 
             val inPath = inputFile.absolutePath
             val outPath = outputFile.absolutePath
 
             val videoEncoders = listOf(
+                "-c:v libx264 -preset fast -crf 21",
                 "-c:v h264_mediacodec -b:v 4M",
-                "-c:v libx264 -preset ultrafast -crf 23",
                 "-c:v mpeg4 -b:v 4M",
                 "-c:v h264"
             )
@@ -1408,56 +1712,47 @@ object VideoProcessor {
             val durMs = if (isTimelineRange && endMs > startMs) (endMs - startMs) else totalDurationMs.coerceAtLeast(1000L)
 
             for (vEnc in videoEncoders) {
+                if (outputFile.exists()) outputFile.delete()
                 val vEncPart = if (vEnc.isNotEmpty()) "$vEnc " else ""
-                val cmd = if (isTimelineRange && startMs < endMs && (startMs > 500L || endMs < totalDurationMs - 500L)) {
+                val trimPrefix = if (isTimelineRange && startMs < endMs && (startMs > 500L || endMs < totalDurationMs - 500L)) {
                     val startSec = String.format(java.util.Locale.US, "%.3f", startMs / 1000.0)
                     val endSec = String.format(java.util.Locale.US, "%.3f", endMs / 1000.0)
-                    "-y -ss $startSec -to $endSec -i \"$inPath\" $vfArg $vEncPart-map 0:v:0? -map 0:a? -c:a aac \"$outPath\""
-                } else {
-                    "-y -i \"$inPath\" $vfArg $vEncPart-map 0:v:0? -map 0:a? -c:a aac \"$outPath\""
-                }
+                    "-ss $startSec -to $endSec "
+                } else ""
+
+                val cmd = "-y $trimPrefix-i \"$inPath\" $vfArg $vEncPart-map 0:v:0 -map 0:a? -sn -dn -c:a aac -b:a 128k -movflags +faststart \"$outPath\""
 
                 Log.d(TAG, "Executing rotate video: $cmd")
                 success = executeFFmpegAsyncWithProgress(
                     cmd = cmd,
                     durationMs = durMs,
-                    startProgress = 0.1f,
-                    endProgress = 0.95f,
+                    startProgress = 0f,
+                    endProgress = 0.99f,
                     onProgress = onProgress
                 ) && outputFile.exists() && outputFile.length() > 0
 
                 if (!success) {
+                    if (outputFile.exists()) outputFile.delete()
                     Log.w(TAG, "AAC audio rotate failed, trying copy audio with vEnc=$vEnc")
-                    val fallbackCmd = if (isTimelineRange && startMs < endMs && (startMs > 500L || endMs < totalDurationMs - 500L)) {
-                        val startSec = String.format(java.util.Locale.US, "%.3f", startMs / 1000.0)
-                        val endSec = String.format(java.util.Locale.US, "%.3f", endMs / 1000.0)
-                        "-y -ss $startSec -to $endSec -i \"$inPath\" $vfArg $vEncPart-c:a copy \"$outPath\""
-                    } else {
-                        "-y -i \"$inPath\" $vfArg $vEncPart-c:a copy \"$outPath\""
-                    }
+                    val fallbackCmd = "-y $trimPrefix-i \"$inPath\" $vfArg $vEncPart-map 0:v:0 -map 0:a? -sn -dn -c:a copy -movflags +faststart \"$outPath\""
                     success = executeFFmpegAsyncWithProgress(
                         cmd = fallbackCmd,
                         durationMs = durMs,
-                        startProgress = 0.1f,
-                        endProgress = 0.95f,
+                        startProgress = 0f,
+                        endProgress = 0.99f,
                         onProgress = onProgress
                     ) && outputFile.exists() && outputFile.length() > 0
                 }
 
                 if (!success) {
+                    if (outputFile.exists()) outputFile.delete()
                     Log.w(TAG, "Audio copy rotate failed, trying no-audio with vEnc=$vEnc")
-                    val noAudioCmd = if (isTimelineRange && startMs < endMs && (startMs > 500L || endMs < totalDurationMs - 500L)) {
-                        val startSec = String.format(java.util.Locale.US, "%.3f", startMs / 1000.0)
-                        val endSec = String.format(java.util.Locale.US, "%.3f", endMs / 1000.0)
-                        "-y -ss $startSec -to $endSec -i \"$inPath\" $vfArg $vEncPart-an \"$outPath\""
-                    } else {
-                        "-y -i \"$inPath\" $vfArg $vEncPart-an \"$outPath\""
-                    }
+                    val noAudioCmd = "-y $trimPrefix-i \"$inPath\" $vfArg $vEncPart-map 0:v:0 -an -sn -dn -movflags +faststart \"$outPath\""
                     success = executeFFmpegAsyncWithProgress(
                         cmd = noAudioCmd,
                         durationMs = durMs,
-                        startProgress = 0.1f,
-                        endProgress = 0.95f,
+                        startProgress = 0f,
+                        endProgress = 0.99f,
                         onProgress = onProgress
                     ) && outputFile.exists() && outputFile.length() > 0
                 }
@@ -1469,10 +1764,13 @@ object VideoProcessor {
 
             if (success) {
                 onProgress(1.0f)
+            } else if (outputFile.exists()) {
+                outputFile.delete()
             }
             return@withContext success
         } catch (e: Exception) {
             Log.e(TAG, "Rotate video error", e)
+            if (outputFile.exists()) outputFile.delete()
             return@withContext false
         } finally {
             tempFilesToClean.forEach { if (it.exists()) it.delete() }
@@ -1567,8 +1865,8 @@ object VideoProcessor {
     }
 
     /**
-     * Fast single-pass multi-part video rotation using hardware acceleration.
-     * Merges overlapping segments, fills unrotated gaps, and applies filter_complex in a single pass.
+     * Single-pass multi-part video rotation with dynamic resolution matching.
+     * Merges overlapping segments, fills unrotated gaps, and applies filter_complex_script in a single pass.
      */
     suspend fun rotateMultiPartVideo(
         context: Context,
@@ -1581,7 +1879,7 @@ object VideoProcessor {
         if (parts.isEmpty()) return@withContext false
         val tempFilesToClean = mutableListOf<File>()
         try {
-            onProgress(0.05f)
+            onProgress(0f)
             val inputFile = getLocalFilePathOrTemp(context, sourceUri)
             if (inputFile.parentFile == context.cacheDir) {
                 tempFilesToClean.add(inputFile)
@@ -1590,6 +1888,7 @@ object VideoProcessor {
             if (outputFile.exists()) {
                 outputFile.delete()
             }
+            outputFile.parentFile?.mkdirs()
 
             // 1. Normalize and merge overlapping / adjacent rotate segments
             val mergedParts = normalizeAndMergeRotateParts(parts, totalDurationMs)
@@ -1607,24 +1906,41 @@ object VideoProcessor {
                 return@withContext true
             }
 
-            // 2. Check audio track presence
+            // 2. Inspect source dimensions, orientation, and audio track presence
+            var hasAudio = false
+            var srcW = 1280
+            var srcH = 720
             val retriever = MediaMetadataRetriever()
-            val hasAudio = try {
+            try {
                 retriever.setDataSource(inputFile.absolutePath)
-                val hasAud = retriever.extractMetadata(MediaMetadataRetriever.METADATA_KEY_HAS_AUDIO)
-                retriever.release()
-                hasAud == "yes"
+                hasAudio = retriever.extractMetadata(MediaMetadataRetriever.METADATA_KEY_HAS_AUDIO) == "yes"
+                val rawW = retriever.extractMetadata(MediaMetadataRetriever.METADATA_KEY_VIDEO_WIDTH)?.toIntOrNull() ?: 1280
+                val rawH = retriever.extractMetadata(MediaMetadataRetriever.METADATA_KEY_VIDEO_HEIGHT)?.toIntOrNull() ?: 720
+                val rotDeg = retriever.extractMetadata(MediaMetadataRetriever.METADATA_KEY_VIDEO_ROTATION)?.toIntOrNull() ?: 0
+                if (rotDeg == 90 || rotDeg == 270) {
+                    srcW = rawH
+                    srcH = rawW
+                } else {
+                    srcW = rawW
+                    srcH = rawH
+                }
             } catch (_: Exception) {
+            } finally {
                 try { retriever.release() } catch (_: Exception) {}
-                false
             }
 
-            // 3. Build single-pass filter_complex for maximum processing speed
+            // Compute dynamic target canvas matching source dimensions (capped at 1920 max side for speed/stability)
+            val maxDim = maxOf(srcW, srcH).coerceAtMost(1920)
+            val scaleCap = if (maxOf(srcW, srcH) > maxDim) maxDim.toDouble() / maxOf(srcW, srcH) else 1.0
+            val targetW = (((srcW * scaleCap).toInt() / 2) * 2).coerceAtLeast(2)
+            val targetH = (((srcH * scaleCap).toInt() / 2) * 2).coerceAtLeast(2)
+
+            // 3. Build single-pass filter_complex_script
+            val filterScriptFile = File(context.cacheDir, "rotate_filter_${System.currentTimeMillis()}.txt")
+            tempFilesToClean.add(filterScriptFile)
+
             val filterBuilder = StringBuilder()
             val concatBuilder = StringBuilder()
-
-            val targetW = 1280
-            val targetH = 720
 
             for ((i, p) in mergedParts.withIndex()) {
                 val sSec = String.format(java.util.Locale.US, "%.3f", p.startMs / 1000.0)
@@ -1642,12 +1958,11 @@ object VideoProcessor {
 
                 val tfArg = if (filters.isNotEmpty()) "," + filters.joinToString(",") else ""
 
-                // Video stream trim & transform
-                filterBuilder.append("[0:v]trim=start=$sSec:end=$eSec,setpts=PTS-STARTPTS$tfArg,scale=$targetW:$targetH:force_original_aspect_ratio=decrease,pad=$targetW:$targetH:(1280-iw)/2:(720-ih)/2:black,setsar=1,format=yuv420p[v$i]; ")
+                // Video stream trim, transform, dynamic aspect-preserving fit & even-aligned padding
+                filterBuilder.append("[0:v]trim=start=$sSec:end=$eSec,setpts=PTS-STARTPTS$tfArg,scale=w=$targetW:h=$targetH:force_original_aspect_ratio=decrease,pad=$targetW:$targetH:(ow-iw)/2:(oh-ih)/2:black,setsar=1,format=yuv420p[v$i];\n")
 
-                // Audio stream trim if present
                 if (hasAudio) {
-                    filterBuilder.append("[0:a]atrim=start=$sSec:end=$eSec,asetpts=PTS-STARTPTS[a$i]; ")
+                    filterBuilder.append("[0:a]atrim=start=$sSec:end=$eSec,asetpts=PTS-STARTPTS[a$i];\n")
                 }
             }
 
@@ -1655,29 +1970,29 @@ object VideoProcessor {
                 for (i in mergedParts.indices) {
                     concatBuilder.append("[v$i][a$i]")
                 }
-                concatBuilder.append("concat=n=${mergedParts.size}:v=1:a=1[outv][outa]")
+                concatBuilder.append("concat=n=${mergedParts.size}:v=1:a=1[outv][outa]\n")
             } else {
                 for (i in mergedParts.indices) {
                     concatBuilder.append("[v$i]")
                 }
-                concatBuilder.append("concat=n=${mergedParts.size}:v=1:a=0[outv]")
+                concatBuilder.append("concat=n=${mergedParts.size}:v=1:a=0[outv]\n")
             }
 
-            val filterComplexStr = filterBuilder.toString() + concatBuilder.toString()
+            filterScriptFile.writeText(filterBuilder.toString() + concatBuilder.toString())
             val mapStr = if (hasAudio) "-map \"[outv]\" -map \"[outa]\"" else "-map \"[outv]\""
 
             val candidateEncoders = if (hasAudio) {
                 listOf(
-                    "-c:v h264_mediacodec -b:v 4M -c:a aac -b:a 128k",
-                    "-c:v libx264 -preset ultrafast -crf 23 -c:a aac -b:a 128k",
-                    "-c:v mpeg4 -b:v 4M -c:a aac -b:a 128k",
+                    "-c:v libx264 -preset fast -crf 21 -c:a aac -b:a 128k -pix_fmt yuv420p -movflags +faststart",
+                    "-c:v h264_mediacodec -b:v 4M -c:a aac -b:a 128k -movflags +faststart",
+                    "-c:v mpeg4 -b:v 4M -c:a aac -b:a 128k -movflags +faststart",
                     "-c:v h264 -c:a aac"
                 )
             } else {
                 listOf(
-                    "-c:v h264_mediacodec -b:v 4M",
-                    "-c:v libx264 -preset ultrafast -crf 23",
-                    "-c:v mpeg4 -b:v 4M",
+                    "-c:v libx264 -preset fast -crf 21 -pix_fmt yuv420p -movflags +faststart",
+                    "-c:v h264_mediacodec -b:v 4M -movflags +faststart",
+                    "-c:v mpeg4 -b:v 4M -movflags +faststart",
                     "-c:v h264"
                 )
             }
@@ -1689,14 +2004,14 @@ object VideoProcessor {
             var success = false
             for (enc in candidateEncoders) {
                 if (outputFile.exists()) outputFile.delete()
-                val cmd = "-y -i \"$inPath\" -filter_complex \"$filterComplexStr\" $mapStr $enc \"$outPath\""
+                val cmd = "-y -i \"$inPath\" -filter_complex_script \"${filterScriptFile.absolutePath}\" $mapStr -sn -dn $enc \"$outPath\""
                 Log.d(TAG, "Executing single-pass multi-rotate: $cmd")
 
                 success = executeFFmpegAsyncWithProgress(
                     cmd = cmd,
                     durationMs = totalDurMs,
-                    startProgress = 0.1f,
-                    endProgress = 0.98f,
+                    startProgress = 0f,
+                    endProgress = 0.99f,
                     onProgress = onProgress
                 ) && outputFile.exists() && outputFile.length() > 0
 
@@ -1704,6 +2019,7 @@ object VideoProcessor {
                     Log.d(TAG, "Single-pass multi-rotate succeeded with encoder: $enc")
                     break
                 } else {
+                    if (outputFile.exists()) outputFile.delete()
                     Log.w(TAG, "Single-pass multi-rotate failed with encoder: $enc")
                 }
             }
@@ -1712,11 +2028,13 @@ object VideoProcessor {
                 onProgress(1.0f)
                 return@withContext true
             } else {
+                if (outputFile.exists()) outputFile.delete()
                 Log.e(TAG, "Single-pass multi-rotate failed on all encoders")
                 return@withContext false
             }
         } catch (e: Exception) {
             Log.e(TAG, "rotateMultiPartVideo exception", e)
+            if (outputFile.exists()) outputFile.delete()
             return@withContext false
         } finally {
             tempFilesToClean.forEach { if (it.exists()) it.delete() }

@@ -1,4 +1,4 @@
 <resources>
     <string name="app_name">VideoCut Studio</string>
-    <string name="lgpl_attribution_notice">This software uses code of FFmpeg (com.moizhassan.ffmpeg:ffmpeg-kit-16kb under LGPL v3.0) for video cutting and multimedia processing.</string>
+    <string name="lgpl_attribution_notice">This software uses FFmpeg via dev.ffmpegkit-maintained:ffmpeg-kit-full-gpl (GPL v3.0) with libx264 and libx265 for video cutting, compression, and multimedia processing.</string>
 </resources>

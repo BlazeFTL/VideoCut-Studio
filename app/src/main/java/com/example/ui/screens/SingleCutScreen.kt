@@ -45,9 +45,10 @@ import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
+import androidx.compose.material3.ExperimentalMaterial3ExpressiveApi
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
-import androidx.compose.material3.LinearProgressIndicator
+import androidx.compose.material3.LinearWavyProgressIndicator
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.OutlinedTextField
@@ -69,22 +70,18 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.asImageBitmap
 import androidx.compose.ui.layout.ContentScale
+import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.compose.ui.viewinterop.AndroidView
 import com.example.model.VideoItem
-import com.example.ui.theme.EmeraldSuccess
-import com.example.ui.theme.RoseError
-import com.example.ui.theme.SecondaryViolet
-import com.example.ui.theme.SurfaceBorderLight
-import com.example.ui.theme.TextPrimaryDark
-import com.example.ui.theme.TextSecondaryMuted
 import com.example.util.VideoProcessor
 
 import com.example.ui.components.FullscreenProcessingDialog
 import com.example.ui.components.VideoPlayerView
 
+@OptIn(ExperimentalMaterial3ExpressiveApi::class)
 @Composable
 fun SingleCutScreen(
     selectedVideo: VideoItem?,
@@ -117,7 +114,6 @@ fun SingleCutScreen(
     var showEndPicker by remember { mutableStateOf(false) }
     var activeCutTab by remember { mutableStateOf(0) } // 0: Cut/Trim video, 1: Equal Parts
 
-    // Seek VideoView to specified time whenever user adjusts startMs
     fun seekToPreview(ms: Long) {
         val safeMs = ms.coerceIn(0L, totalDurationMs).toInt()
         videoViewRef?.let { vv ->
@@ -129,11 +125,10 @@ fun SingleCutScreen(
     Column(
         modifier = Modifier
             .fillMaxSize()
-            .background(Color(0xFFF8F9FA))
+            .background(MaterialTheme.colorScheme.background)
             .padding(12.dp),
         verticalArrangement = Arrangement.spacedBy(10.dp)
     ) {
-        // Top Bar (Format selector, Back button & Done/Save button)
         Row(
             modifier = Modifier
                 .fillMaxWidth()
@@ -158,7 +153,7 @@ fun SingleCutScreen(
                     Icon(
                         imageVector = Icons.AutoMirrored.Filled.ArrowBack,
                         contentDescription = "Back / Select Video",
-                        tint = TextPrimaryDark
+                        tint = MaterialTheme.colorScheme.onBackground
                     )
                 }
 
@@ -167,16 +162,16 @@ fun SingleCutScreen(
                 Icon(
                     imageVector = Icons.Default.ContentCut,
                     contentDescription = "Crop",
-                    tint = TextPrimaryDark,
+                    tint = MaterialTheme.colorScheme.onBackground,
                     modifier = Modifier.size(20.dp)
                 )
 
                 Spacer(modifier = Modifier.width(10.dp))
 
                 Surface(
-                    color = Color.White,
-                    shape = RoundedCornerShape(8.dp),
-                    border = BorderStroke(1.dp, SurfaceBorderLight)
+                    color = MaterialTheme.colorScheme.surfaceContainerLow,
+                    shape = RoundedCornerShape(10.dp),
+                    border = BorderStroke(1.dp, MaterialTheme.colorScheme.outlineVariant)
                 ) {
                     Row(
                         modifier = Modifier.padding(horizontal = 10.dp, vertical = 6.dp),
@@ -186,25 +181,25 @@ fun SingleCutScreen(
                             text = selectedVideo?.title?.substringAfterLast('.')?.uppercase() ?: "MP4",
                             fontWeight = FontWeight.Bold,
                             fontSize = 13.sp,
-                            color = TextPrimaryDark
+                            color = MaterialTheme.colorScheme.onSurface
                         )
                         Spacer(modifier = Modifier.width(4.dp))
-                        Text("▾", fontSize = 11.sp, color = TextSecondaryMuted)
+                        Text("▾", fontSize = 11.sp, color = MaterialTheme.colorScheme.onSurfaceVariant)
                     }
                 }
             }
 
-            // Cut & Save Button on Top Right
             Button(
                 onClick = onProcessCut,
                 enabled = !isProcessing && selectedVideo != null,
                 colors = ButtonDefaults.buttonColors(containerColor = MaterialTheme.colorScheme.primary),
                 shape = RoundedCornerShape(20.dp),
-                contentPadding = androidx.compose.foundation.layout.PaddingValues(horizontal = 16.dp, vertical = 6.dp)
+                contentPadding = androidx.compose.foundation.layout.PaddingValues(horizontal = 16.dp, vertical = 6.dp),
+                modifier = Modifier.testTag("single_cut_save_button")
             ) {
                 Text(
                     text = if (isProcessing) "Saving..." else "Cut & Save",
-                    color = Color.White,
+                    color = MaterialTheme.colorScheme.onPrimary,
                     fontWeight = FontWeight.Bold,
                     fontSize = 14.sp
                 )
@@ -267,59 +262,56 @@ fun SingleCutScreen(
         // Unified Stepper Controls & Video Frame Timeline Strip Below Video Container
         Card(
             modifier = Modifier.fillMaxWidth(),
-            colors = CardDefaults.cardColors(containerColor = Color.White),
-            border = BorderStroke(1.dp, SurfaceBorderLight),
-            shape = RoundedCornerShape(12.dp)
+            colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceContainerLow),
+            border = BorderStroke(1.dp, MaterialTheme.colorScheme.outlineVariant),
+            shape = RoundedCornerShape(18.dp)
         ) {
-                Column(modifier = Modifier.padding(10.dp)) {
-                    // Top Steppers Row: Start Stepper (Left), Duration (Center), End Stepper (Right)
+                Column(modifier = Modifier.padding(12.dp)) {
                     Row(
                         modifier = Modifier.fillMaxWidth(),
                         horizontalArrangement = Arrangement.SpaceBetween,
                         verticalAlignment = Alignment.CenterVertically
                     ) {
-                        // Left Start Time Stepper (- 00:00:36.000 +)
                         Row(verticalAlignment = Alignment.CenterVertically) {
                             Surface(
                                 color = MaterialTheme.colorScheme.primaryContainer,
-                                shape = RoundedCornerShape(4.dp),
+                                shape = RoundedCornerShape(6.dp),
                                 modifier = Modifier
-                                    .size(24.dp)
+                                    .size(28.dp)
                                     .clickable {
                                         val newS = (startMs - 1000L).coerceAtLeast(0L)
                                         onRangeChanged(newS, endMs)
                                     }
                             ) {
                                 Box(contentAlignment = Alignment.Center) {
-                                    Text("-", color = MaterialTheme.colorScheme.primary, fontWeight = FontWeight.Bold)
+                                    Text("-", color = MaterialTheme.colorScheme.onPrimaryContainer, fontWeight = FontWeight.Bold)
                                 }
                             }
-                            Spacer(modifier = Modifier.width(4.dp))
+                            Spacer(modifier = Modifier.width(6.dp))
                             Text(
                                 text = VideoProcessor.formatDurationPrecise(startMs),
                                 fontSize = 11.sp,
                                 fontWeight = FontWeight.Bold,
-                                color = TextPrimaryDark,
+                                color = MaterialTheme.colorScheme.onSurface,
                                 modifier = Modifier.clickable { showStartPicker = true }
                             )
-                            Spacer(modifier = Modifier.width(4.dp))
+                            Spacer(modifier = Modifier.width(6.dp))
                             Surface(
                                 color = MaterialTheme.colorScheme.primaryContainer,
-                                shape = RoundedCornerShape(4.dp),
+                                shape = RoundedCornerShape(6.dp),
                                 modifier = Modifier
-                                    .size(24.dp)
+                                    .size(28.dp)
                                     .clickable {
-                                        val newS = (startMs + 1000L).coerceAtMost(endMs - 100L)
+                                        val newS = (startMs + 1000L).coerceAtMost((endMs - 100L).coerceAtLeast(0L))
                                         onRangeChanged(newS, endMs)
                                     }
                             ) {
                                 Box(contentAlignment = Alignment.Center) {
-                                    Text("+", color = MaterialTheme.colorScheme.primary, fontWeight = FontWeight.Bold)
+                                    Text("+", color = MaterialTheme.colorScheme.onPrimaryContainer, fontWeight = FontWeight.Bold)
                                 }
                             }
                         }
 
-                        // Center Cut Duration Badge
                         Row(verticalAlignment = Alignment.CenterVertically) {
                             Icon(Icons.Default.ContentCut, contentDescription = null, tint = MaterialTheme.colorScheme.primary, modifier = Modifier.size(14.dp))
                             Spacer(modifier = Modifier.width(4.dp))
@@ -327,47 +319,46 @@ fun SingleCutScreen(
                                 text = VideoProcessor.formatDurationPrecise(cutDurationMs),
                                 fontSize = 11.sp,
                                 fontWeight = FontWeight.ExtraBold,
-                                color = TextPrimaryDark
+                                color = MaterialTheme.colorScheme.onSurface
                             )
                         }
 
-                        // Right End Time Stepper (- 00:03:29.000 +)
                         Row(verticalAlignment = Alignment.CenterVertically) {
                             Surface(
                                 color = MaterialTheme.colorScheme.primaryContainer,
-                                shape = RoundedCornerShape(4.dp),
+                                shape = RoundedCornerShape(6.dp),
                                 modifier = Modifier
-                                    .size(24.dp)
+                                    .size(28.dp)
                                     .clickable {
-                                        val newE = (endMs - 1000L).coerceAtLeast(startMs + 100L)
+                                        val newE = (endMs - 1000L).coerceAtLeast((startMs + 100L).coerceAtMost(totalDurationMs))
                                         onRangeChanged(startMs, newE)
                                     }
                             ) {
                                 Box(contentAlignment = Alignment.Center) {
-                                    Text("-", color = MaterialTheme.colorScheme.primary, fontWeight = FontWeight.Bold)
+                                    Text("-", color = MaterialTheme.colorScheme.onPrimaryContainer, fontWeight = FontWeight.Bold)
                                 }
                             }
-                            Spacer(modifier = Modifier.width(4.dp))
+                            Spacer(modifier = Modifier.width(6.dp))
                             Text(
                                 text = VideoProcessor.formatDurationPrecise(endMs),
                                 fontSize = 11.sp,
                                 fontWeight = FontWeight.Bold,
-                                color = TextPrimaryDark,
+                                color = MaterialTheme.colorScheme.onSurface,
                                 modifier = Modifier.clickable { showEndPicker = true }
                             )
-                            Spacer(modifier = Modifier.width(4.dp))
+                            Spacer(modifier = Modifier.width(6.dp))
                             Surface(
                                 color = MaterialTheme.colorScheme.primaryContainer,
-                                shape = RoundedCornerShape(4.dp),
+                                shape = RoundedCornerShape(6.dp),
                                 modifier = Modifier
-                                    .size(24.dp)
+                                    .size(28.dp)
                                     .clickable {
                                         val newE = (endMs + 1000L).coerceAtMost(totalDurationMs)
                                         onRangeChanged(startMs, newE)
                                     }
                             ) {
                                 Box(contentAlignment = Alignment.Center) {
-                                    Text("+", color = MaterialTheme.colorScheme.primary, fontWeight = FontWeight.Bold)
+                                    Text("+", color = MaterialTheme.colorScheme.onPrimaryContainer, fontWeight = FontWeight.Bold)
                                 }
                             }
                         }
@@ -511,12 +502,9 @@ fun SingleCutScreen(
                         color = MaterialTheme.colorScheme.primary
                     )
                 }
-                LinearProgressIndicator(
-                    progress = { processingProgress },
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .height(8.dp)
-                        .clip(RoundedCornerShape(4.dp)),
+                LinearWavyProgressIndicator(
+                    progress = { processingProgress.coerceIn(0f, 1f) },
+                    modifier = Modifier.fillMaxWidth(),
                     color = MaterialTheme.colorScheme.primary,
                     trackColor = MaterialTheme.colorScheme.primaryContainer
                 )
@@ -529,7 +517,7 @@ fun SingleCutScreen(
         PreciseTimePickerDialog(
             title = "Set Start Time",
             initialMs = startMs,
-            maxMs = endMs - 100L,
+            maxMs = (endMs - 100L).coerceAtLeast(0L),
             onDismiss = { showStartPicker = false },
             onConfirm = { ms ->
                 onRangeChanged(ms, endMs)
@@ -568,14 +556,13 @@ private fun TimeStepperBox(
         modifier = modifier
             .height(56.dp)
             .clip(RoundedCornerShape(10.dp)),
-        color = Color.White,
-        border = BorderStroke(1.dp, SurfaceBorderLight)
+        color = MaterialTheme.colorScheme.surfaceContainerLow,
+        border = BorderStroke(1.dp, MaterialTheme.colorScheme.outlineVariant)
     ) {
         Row(
             modifier = Modifier.fillMaxSize(),
             verticalAlignment = Alignment.CenterVertically
         ) {
-            // Minus Button
             Box(
                 modifier = Modifier
                     .width(32.dp)
@@ -584,10 +571,9 @@ private fun TimeStepperBox(
                     .clickable(onClick = onMinus),
                 contentAlignment = Alignment.Center
             ) {
-                Icon(Icons.Default.Remove, contentDescription = "Decrease", tint = Color.White, modifier = Modifier.size(16.dp))
+                Icon(Icons.Default.Remove, contentDescription = "Decrease", tint = MaterialTheme.colorScheme.onPrimary, modifier = Modifier.size(16.dp))
             }
 
-            // Center Time Text
             Box(
                 modifier = Modifier
                     .weight(1f)
@@ -596,12 +582,11 @@ private fun TimeStepperBox(
                 contentAlignment = Alignment.Center
             ) {
                 Column(horizontalAlignment = Alignment.CenterHorizontally) {
-                    Text(title, fontSize = 8.sp, fontWeight = FontWeight.Bold, color = TextSecondaryMuted)
-                    Text(timeString, fontSize = 11.sp, fontWeight = FontWeight.ExtraBold, color = TextPrimaryDark)
+                    Text(title, fontSize = 8.sp, fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                    Text(timeString, fontSize = 11.sp, fontWeight = FontWeight.ExtraBold, color = MaterialTheme.colorScheme.onSurface)
                 }
             }
 
-            // Plus Button
             Box(
                 modifier = Modifier
                     .width(32.dp)
@@ -610,7 +595,7 @@ private fun TimeStepperBox(
                     .clickable(onClick = onPlus),
                 contentAlignment = Alignment.Center
             ) {
-                Icon(Icons.Default.Add, contentDescription = "Increase", tint = Color.White, modifier = Modifier.size(16.dp))
+                Icon(Icons.Default.Add, contentDescription = "Increase", tint = MaterialTheme.colorScheme.onPrimary, modifier = Modifier.size(16.dp))
             }
         }
     }
@@ -638,7 +623,7 @@ private fun PreciseTimePickerDialog(
         title = { Text(title, fontWeight = FontWeight.Bold, fontSize = 16.sp) },
         text = {
             Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
-                Text("Enter exact timestamp:", fontSize = 13.sp, color = TextSecondaryMuted)
+                Text("Enter exact timestamp:", fontSize = 13.sp, color = MaterialTheme.colorScheme.onSurfaceVariant)
 
                 Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
                     OutlinedTextField(
@@ -670,7 +655,7 @@ private fun PreciseTimePickerDialog(
                     val m = minStr.toLongOrNull() ?: 0L
                     val s = secStr.toLongOrNull() ?: 0L
                     val ms = msStr.toLongOrNull() ?: 0L
-                    val computedMs = ((m * 60 + s) * 1000 + ms).coerceIn(0L, maxMs)
+                    val computedMs = ((m * 60 + s) * 1000 + ms).coerceIn(0L, maxMs.coerceAtLeast(0L))
                     onConfirm(computedMs)
                 },
                 colors = ButtonDefaults.buttonColors(containerColor = MaterialTheme.colorScheme.primary)

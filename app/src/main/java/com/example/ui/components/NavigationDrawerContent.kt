@@ -43,9 +43,6 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.example.ui.NavigationTab
-import com.example.ui.theme.SurfaceBorderLight
-import com.example.ui.theme.TextPrimaryDark
-import com.example.ui.theme.TextSecondaryMuted
 
 @Composable
 fun NavigationDrawerContent(
@@ -58,7 +55,7 @@ fun NavigationDrawerContent(
         modifier = modifier
             .width(280.dp)
             .fillMaxHeight(),
-        color = Color.White,
+        color = MaterialTheme.colorScheme.surface,
         shadowElevation = 8.dp
     ) {
         Column(
@@ -273,16 +270,16 @@ private fun DrawerMenuItem(
     onClick: () -> Unit
 ) {
     val backgroundColor = if (isSelected) MaterialTheme.colorScheme.primary else Color.Transparent
-    val contentColor = if (isSelected) Color.White else MaterialTheme.colorScheme.onSurface
+    val contentColor = if (isSelected) MaterialTheme.colorScheme.onPrimary else MaterialTheme.colorScheme.onSurface
 
     Row(
         modifier = Modifier
             .fillMaxWidth()
-            .padding(vertical = 4.dp)
-            .clip(RoundedCornerShape(12.dp))
+            .padding(vertical = 3.dp)
+            .clip(RoundedCornerShape(14.dp))
             .background(backgroundColor)
             .clickable(onClick = onClick)
-            .padding(horizontal = 12.dp, vertical = 12.dp),
+            .padding(horizontal = 12.dp, vertical = 13.dp),
         verticalAlignment = Alignment.CenterVertically
     ) {
         Icon(

@@ -17,6 +17,7 @@ import com.example.MainActivity
 class VideoProcessingService : Service() {
 
     private var wakeLock: PowerManager.WakeLock? = null
+    private var activeTitle: String = "Processing Video..."
 
     companion object {
         const val CHANNEL_ID = "video_processing_channel"
@@ -30,6 +31,9 @@ class VideoProcessingService : Service() {
         const val EXTRA_STATUS = "extra_status"
         const val EXTRA_PROGRESS = "extra_progress"
         const val EXTRA_ENABLE_WAKELOCK = "extra_enable_wakelock"
+
+        @Volatile
+        private var isServiceRunning: Boolean = false
 
         fun startProcessing(
             context: Context,
@@ -45,27 +49,45 @@ class VideoProcessingService : Service() {
                 putExtra(EXTRA_PROGRESS, progress)
                 putExtra(EXTRA_ENABLE_WAKELOCK, enableWakeLock)
             }
-            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
-                context.startForegroundService(intent)
-            } else {
-                context.startService(intent)
+            try {
+                if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
+                    context.startForegroundService(intent)
+                } else {
+                    context.startService(intent)
+                }
+                isServiceRunning = true
+            } catch (_: Exception) {
+                isServiceRunning = false
             }
         }
 
         fun updateProgress(context: Context, status: String, progress: Int) {
+            if (!isServiceRunning) return
             val intent = Intent(context, VideoProcessingService::class.java).apply {
                 action = ACTION_UPDATE
                 putExtra(EXTRA_STATUS, status)
                 putExtra(EXTRA_PROGRESS, progress)
             }
-            context.startService(intent)
+            try {
+                context.startService(intent)
+            } catch (_: Exception) {
+                // Ignore if app transitioned to background while service is already running
+            }
         }
 
         fun stopProcessing(context: Context) {
+            if (!isServiceRunning) return
             val intent = Intent(context, VideoProcessingService::class.java).apply {
                 action = ACTION_STOP
             }
-            context.startService(intent)
+            isServiceRunning = false
+            try {
+                context.startService(intent)
+            } catch (_: Exception) {
+                try {
+                    context.stopService(Intent(context, VideoProcessingService::class.java))
+                } catch (_: Exception) { }
+            }
         }
     }
 
@@ -80,6 +102,8 @@ class VideoProcessingService : Service() {
         when (action) {
             ACTION_START -> {
                 val title = intent.getStringExtra(EXTRA_TITLE) ?: "Processing Video..."
+                activeTitle = title
+                isServiceRunning = true
                 val status = intent.getStringExtra(EXTRA_STATUS) ?: "Encoding video..."
                 val progress = intent.getIntExtra(EXTRA_PROGRESS, 0)
                 val enableWakeLock = intent.getBooleanExtra(EXTRA_ENABLE_WAKELOCK, true)
@@ -94,7 +118,7 @@ class VideoProcessingService : Service() {
                     }
                 }
 
-                val notification = buildNotification(title, status, progress)
+                val notification = buildNotification(activeTitle, status, progress)
                 if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
                     val foregroundType = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.UPSIDE_DOWN_CAKE) {
                         ServiceInfo.FOREGROUND_SERVICE_TYPE_SPECIAL_USE or ServiceInfo.FOREGROUND_SERVICE_TYPE_DATA_SYNC
@@ -115,17 +139,18 @@ class VideoProcessingService : Service() {
                 val status = intent.getStringExtra(EXTRA_STATUS) ?: "Processing..."
                 val progress = intent.getIntExtra(EXTRA_PROGRESS, 0)
                 val nm = getSystemService(Context.NOTIFICATION_SERVICE) as NotificationManager
-                nm.notify(NOTIFICATION_ID, buildNotification("Processing Video...", status, progress))
+                nm.notify(NOTIFICATION_ID, buildNotification(activeTitle, status, progress))
             }
 
             ACTION_STOP -> {
+                isServiceRunning = false
                 releaseWakeLock()
                 stopForeground(STOP_FOREGROUND_REMOVE)
                 stopSelf()
             }
         }
 
-        return START_STICKY
+        return START_NOT_STICKY
     }
 
     private fun releaseWakeLock() {

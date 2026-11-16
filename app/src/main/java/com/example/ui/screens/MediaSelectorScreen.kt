@@ -2,7 +2,6 @@ package com.example.ui.screens
 
 import android.net.Uri
 import androidx.compose.foundation.BorderStroke
-import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
@@ -24,14 +23,12 @@ import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.Delete
 import androidx.compose.material.icons.filled.Folder
 import androidx.compose.material.icons.filled.MoreVert
 import androidx.compose.material.icons.filled.PlayArrow
 import androidx.compose.material.icons.filled.Search
 import androidx.compose.material.icons.filled.Sort
 import androidx.compose.material.icons.filled.ViewList
-import androidx.compose.material.icons.filled.ViewModule
 import androidx.compose.material.icons.outlined.Movie
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Button
@@ -43,7 +40,6 @@ import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
@@ -57,16 +53,13 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.layout.ContentScale
+import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.example.ui.MediaSortType
 import com.example.ui.MediaViewMode
 import com.example.ui.NavigationTab
-import com.example.ui.theme.SurfaceBorderLight
-import com.example.ui.theme.TextPrimaryDark
-import com.example.ui.theme.TextSecondaryMuted
 import com.example.util.VideoProcessor
 
 @Composable
@@ -135,17 +128,17 @@ fun MediaSelectorScreen(
             horizontalArrangement = Arrangement.SpaceBetween,
             verticalAlignment = Alignment.CenterVertically
         ) {
-            Column {
+            Column(modifier = Modifier.weight(1f)) {
                 Text(
                     text = "Media Selector",
                     fontWeight = FontWeight.Bold,
                     fontSize = 22.sp,
-                    color = TextPrimaryDark
+                    color = MaterialTheme.colorScheme.onBackground
                 )
                 Text(
                     text = "${videos.size} Videos found on device",
                     fontSize = 12.sp,
-                    color = TextSecondaryMuted
+                    color = MaterialTheme.colorScheme.onSurfaceVariant
                 )
             }
 
@@ -158,13 +151,15 @@ fun MediaSelectorScreen(
                         onSetViewMode(next)
                     },
                     modifier = Modifier
+                        .size(48.dp)
                         .clip(CircleShape)
                         .background(MaterialTheme.colorScheme.primaryContainer)
+                        .testTag("media_selector_view_mode_button")
                 ) {
                     Icon(
                         imageVector = if (viewMode == MediaViewMode.FILES) Icons.Default.Folder else Icons.Default.ViewList,
                         contentDescription = "Toggle View Mode",
-                        tint = MaterialTheme.colorScheme.primary,
+                        tint = MaterialTheme.colorScheme.onPrimaryContainer,
                         modifier = Modifier.size(20.dp)
                     )
                 }
@@ -176,13 +171,15 @@ fun MediaSelectorScreen(
                     IconButton(
                         onClick = { isSortMenuExpanded = true },
                         modifier = Modifier
+                            .size(48.dp)
                             .clip(CircleShape)
                             .background(MaterialTheme.colorScheme.primaryContainer)
+                            .testTag("media_selector_sort_button")
                     ) {
                         Icon(
                             imageVector = Icons.Default.Sort,
                             contentDescription = "Sort Options",
-                            tint = MaterialTheme.colorScheme.primary,
+                            tint = MaterialTheme.colorScheme.onPrimaryContainer,
                             modifier = Modifier.size(20.dp)
                         )
                     }
@@ -211,10 +208,24 @@ fun MediaSelectorScreen(
         OutlinedTextField(
             value = searchQuery,
             onValueChange = { searchQuery = it },
-            placeholder = { Text("Search videos by title...", fontSize = 13.sp, color = TextSecondaryMuted) },
-            leadingIcon = { Icon(Icons.Default.Search, contentDescription = null, tint = TextSecondaryMuted) },
-            modifier = Modifier.fillMaxWidth(),
-            shape = RoundedCornerShape(12.dp),
+            placeholder = {
+                Text(
+                    "Search videos by title...",
+                    fontSize = 13.sp,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                )
+            },
+            leadingIcon = {
+                Icon(
+                    Icons.Default.Search,
+                    contentDescription = "Search videos",
+                    tint = MaterialTheme.colorScheme.onSurfaceVariant
+                )
+            },
+            modifier = Modifier
+                .fillMaxWidth()
+                .testTag("media_selector_search_input"),
+            shape = RoundedCornerShape(14.dp),
             singleLine = true
         )
 
@@ -223,15 +234,25 @@ fun MediaSelectorScreen(
             Spacer(modifier = Modifier.height(8.dp))
             Row(
                 modifier = Modifier
-                    .clip(RoundedCornerShape(8.dp))
+                    .clip(RoundedCornerShape(10.dp))
                     .background(MaterialTheme.colorScheme.primaryContainer)
                     .clickable { selectedFolderFilter = null }
-                    .padding(horizontal = 10.dp, vertical = 6.dp),
+                    .padding(horizontal = 12.dp, vertical = 8.dp),
                 verticalAlignment = Alignment.CenterVertically
             ) {
-                Icon(Icons.Default.Folder, contentDescription = null, tint = MaterialTheme.colorScheme.primary, modifier = Modifier.size(16.dp))
+                Icon(
+                    Icons.Default.Folder,
+                    contentDescription = null,
+                    tint = MaterialTheme.colorScheme.onPrimaryContainer,
+                    modifier = Modifier.size(16.dp)
+                )
                 Spacer(modifier = Modifier.width(6.dp))
-                Text("Folder: $selectedFolderFilter  ✕ Clear Filter", fontSize = 12.sp, fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.primary)
+                Text(
+                    "Folder: $selectedFolderFilter  ✕ Clear Filter",
+                    fontSize = 12.sp,
+                    fontWeight = FontWeight.Bold,
+                    color = MaterialTheme.colorScheme.onPrimaryContainer
+                )
             }
         }
 
@@ -253,9 +274,9 @@ fun MediaSelectorScreen(
                                 selectedFolderFilter = folder.name
                                 onSetViewMode(MediaViewMode.FILES)
                             },
-                        colors = CardDefaults.cardColors(containerColor = Color.White),
-                        border = BorderStroke(1.dp, SurfaceBorderLight),
-                        shape = RoundedCornerShape(14.dp)
+                        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceContainerLow),
+                        border = BorderStroke(1.dp, MaterialTheme.colorScheme.outlineVariant),
+                        shape = RoundedCornerShape(16.dp)
                     ) {
                         Column(
                             modifier = Modifier.padding(14.dp),
@@ -264,14 +285,14 @@ fun MediaSelectorScreen(
                             Box(
                                 modifier = Modifier
                                     .size(44.dp)
-                                    .clip(RoundedCornerShape(10.dp))
+                                    .clip(RoundedCornerShape(12.dp))
                                     .background(MaterialTheme.colorScheme.primaryContainer),
                                 contentAlignment = Alignment.Center
                             ) {
                                 Icon(
                                     imageVector = Icons.Default.Folder,
                                     contentDescription = null,
-                                    tint = MaterialTheme.colorScheme.primary,
+                                    tint = MaterialTheme.colorScheme.onPrimaryContainer,
                                     modifier = Modifier.size(24.dp)
                                 )
                             }
@@ -280,14 +301,14 @@ fun MediaSelectorScreen(
                                 text = folder.name,
                                 fontWeight = FontWeight.Bold,
                                 fontSize = 14.sp,
-                                color = TextPrimaryDark,
+                                color = MaterialTheme.colorScheme.onSurface,
                                 maxLines = 1
                             )
 
                             Text(
                                 text = "${folder.videoCount} Videos • ${VideoProcessor.formatFileSize(folder.totalSizeBytes)}",
                                 fontSize = 11.sp,
-                                color = TextSecondaryMuted
+                                color = MaterialTheme.colorScheme.onSurfaceVariant
                             )
                         }
                     }
@@ -302,7 +323,7 @@ fun MediaSelectorScreen(
                         .weight(1f),
                     contentAlignment = Alignment.Center
                 ) {
-                    Text("No videos found", color = TextSecondaryMuted, fontSize = 14.sp)
+                    Text("No videos found", color = MaterialTheme.colorScheme.onSurfaceVariant, fontSize = 14.sp)
                 }
             } else {
                 LazyColumn(
@@ -338,9 +359,9 @@ fun MediaSelectorScreen(
                         onDeleteVideo(target)
                         videoToDelete = null
                     },
-                    colors = ButtonDefaults.buttonColors(containerColor = Color(0xFFDC2626))
+                    colors = ButtonDefaults.buttonColors(containerColor = MaterialTheme.colorScheme.error)
                 ) {
-                    Text("Delete")
+                    Text("Delete", color = MaterialTheme.colorScheme.onError)
                 }
             },
             dismissButton = {
@@ -372,9 +393,9 @@ private fun DeviceVideoRowItem(
         modifier = Modifier
             .fillMaxWidth()
             .clickable(onClick = onPlay),
-        colors = CardDefaults.cardColors(containerColor = Color.White),
-        border = BorderStroke(1.dp, SurfaceBorderLight),
-        shape = RoundedCornerShape(12.dp)
+        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceContainerLow),
+        border = BorderStroke(1.dp, MaterialTheme.colorScheme.outlineVariant),
+        shape = RoundedCornerShape(14.dp)
     ) {
         Row(
             modifier = Modifier
@@ -386,14 +407,14 @@ private fun DeviceVideoRowItem(
             Box(
                 modifier = Modifier
                     .size(64.dp, 64.dp)
-                    .clip(RoundedCornerShape(8.dp))
+                    .clip(RoundedCornerShape(10.dp))
                     .background(MaterialTheme.colorScheme.primaryContainer),
                 contentAlignment = Alignment.Center
             ) {
                 Icon(
                     imageVector = Icons.Outlined.Movie,
                     contentDescription = null,
-                    tint = MaterialTheme.colorScheme.primary,
+                    tint = MaterialTheme.colorScheme.onPrimaryContainer,
                     modifier = Modifier.size(26.dp)
                 )
 
@@ -401,7 +422,7 @@ private fun DeviceVideoRowItem(
                     modifier = Modifier
                         .size(24.dp)
                         .clip(CircleShape)
-                        .background(Color.Black.copy(alpha = 0.5f)),
+                        .background(Color.Black.copy(alpha = 0.55f)),
                     contentAlignment = Alignment.Center
                 ) {
                     Icon(
@@ -421,7 +442,7 @@ private fun DeviceVideoRowItem(
                     text = item.title,
                     fontWeight = FontWeight.Bold,
                     fontSize = 13.sp,
-                    color = TextPrimaryDark,
+                    color = MaterialTheme.colorScheme.onSurface,
                     maxLines = 1
                 )
 
@@ -430,7 +451,7 @@ private fun DeviceVideoRowItem(
                 Text(
                     text = "${VideoProcessor.formatDuration(item.durationMs)} • ${item.width}x${item.height}",
                     fontSize = 11.sp,
-                    color = TextSecondaryMuted
+                    color = MaterialTheme.colorScheme.onSurfaceVariant
                 )
 
                 Spacer(modifier = Modifier.height(2.dp))
@@ -438,13 +459,16 @@ private fun DeviceVideoRowItem(
                 Text(
                     text = "Size: ${VideoProcessor.formatFileSize(item.sizeBytes)} • Folder: ${item.folderName}",
                     fontSize = 10.sp,
-                    color = TextSecondaryMuted
+                    color = MaterialTheme.colorScheme.onSurfaceVariant
                 )
             }
 
             // Options Action Menu
             Box {
-                IconButton(onClick = { isMenuExpanded = true }) {
+                IconButton(
+                    onClick = { isMenuExpanded = true },
+                    modifier = Modifier.size(48.dp)
+                ) {
                     Icon(Icons.Default.MoreVert, contentDescription = "Options", tint = MaterialTheme.colorScheme.primary)
                 }
 
@@ -481,7 +505,7 @@ private fun DeviceVideoRowItem(
                         }
                     )
                     DropdownMenuItem(
-                        text = { Text("Delete from Device", fontSize = 13.sp, color = Color(0xFFDC2626)) },
+                        text = { Text("Delete from Device", fontSize = 13.sp, color = MaterialTheme.colorScheme.error) },
                         onClick = {
                             isMenuExpanded = false
                             onDelete()
@@ -492,3 +516,4 @@ private fun DeviceVideoRowItem(
         }
     }
 }
+

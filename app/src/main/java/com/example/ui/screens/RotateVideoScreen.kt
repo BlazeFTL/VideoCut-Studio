@@ -32,7 +32,6 @@ import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.Delete
 import androidx.compose.material.icons.filled.RotateLeft
 import androidx.compose.material.icons.filled.RotateRight
-import androidx.compose.material.icons.filled.ScreenRotation
 import androidx.compose.material.icons.filled.SwapHoriz
 import androidx.compose.material.icons.filled.SwapVert
 import androidx.compose.material3.Button
@@ -46,24 +45,19 @@ import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.RangeSlider
 import androidx.compose.material3.SliderDefaults
 import androidx.compose.material3.Surface
-import androidx.compose.material3.Switch
-import androidx.compose.material3.SwitchDefaults
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.example.model.RotatePart
 import com.example.model.VideoItem
-import com.example.ui.components.FullscreenProcessingDialog
 import com.example.ui.components.VideoPlayerView
-import com.example.ui.theme.SurfaceBorderLight
-import com.example.ui.theme.TextPrimaryDark
-import com.example.ui.theme.TextSecondaryMuted
 import com.example.util.VideoProcessor
 
 @Composable
@@ -114,26 +108,36 @@ fun RotateVideoScreen(
             horizontalArrangement = Arrangement.SpaceBetween,
             verticalAlignment = Alignment.CenterVertically
         ) {
-            Column {
+            Column(modifier = Modifier.weight(1f)) {
                 Text(
                     text = "Smart Video Rotate & Flip",
                     fontWeight = FontWeight.Bold,
                     fontSize = 20.sp,
-                    color = TextPrimaryDark
+                    color = MaterialTheme.colorScheme.onBackground
                 )
                 Text(
                     text = "Rotate full video or multi-part timeline segments",
                     fontSize = 12.sp,
-                    color = TextSecondaryMuted
+                    color = MaterialTheme.colorScheme.onSurfaceVariant
                 )
             }
 
             OutlinedButton(
-                onClick = { pickerLauncher.launch(androidx.activity.result.PickVisualMediaRequest(ActivityResultContracts.PickVisualMedia.VideoOnly)) },
+                onClick = {
+                    pickerLauncher.launch(
+                        androidx.activity.result.PickVisualMediaRequest(ActivityResultContracts.PickVisualMedia.VideoOnly)
+                    )
+                },
                 shape = RoundedCornerShape(20.dp),
-                border = BorderStroke(1.dp, MaterialTheme.colorScheme.primary)
+                border = BorderStroke(1.dp, MaterialTheme.colorScheme.primary),
+                modifier = Modifier.testTag("rotate_select_video_button")
             ) {
-                Text(if (selectedVideo == null) "Select Video" else "Change", fontSize = 12.sp, color = MaterialTheme.colorScheme.primary, fontWeight = FontWeight.Bold)
+                Text(
+                    if (selectedVideo == null) "Select Video" else "Change",
+                    fontSize = 12.sp,
+                    color = MaterialTheme.colorScheme.primary,
+                    fontWeight = FontWeight.Bold
+                )
             }
         }
 
@@ -143,10 +147,15 @@ fun RotateVideoScreen(
                 modifier = Modifier
                     .fillMaxWidth()
                     .height(280.dp)
-                    .clickable { pickerLauncher.launch(androidx.activity.result.PickVisualMediaRequest(ActivityResultContracts.PickVisualMedia.VideoOnly)) },
-                colors = CardDefaults.cardColors(containerColor = Color.White),
-                border = BorderStroke(1.dp, SurfaceBorderLight),
-                shape = RoundedCornerShape(16.dp)
+                    .testTag("rotate_empty_card")
+                    .clickable {
+                        pickerLauncher.launch(
+                            androidx.activity.result.PickVisualMediaRequest(ActivityResultContracts.PickVisualMedia.VideoOnly)
+                        )
+                    },
+                colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceContainerLow),
+                border = BorderStroke(1.dp, MaterialTheme.colorScheme.outlineVariant),
+                shape = RoundedCornerShape(20.dp)
             ) {
                 Column(
                     modifier = Modifier.fillMaxSize(),
@@ -162,8 +171,8 @@ fun RotateVideoScreen(
                     ) {
                         Icon(
                             imageVector = Icons.Default.RotateRight,
-                            contentDescription = null,
-                            tint = MaterialTheme.colorScheme.primary,
+                            contentDescription = "Select video to rotate",
+                            tint = MaterialTheme.colorScheme.onPrimaryContainer,
                             modifier = Modifier.size(28.dp)
                         )
                     }
@@ -174,24 +183,24 @@ fun RotateVideoScreen(
                         text = "No Video Selected",
                         fontWeight = FontWeight.Bold,
                         fontSize = 15.sp,
-                        color = TextPrimaryDark
+                        color = MaterialTheme.colorScheme.onSurface
                     )
 
                     Text(
                         text = "Tap to choose a video to rotate or mirror",
                         fontSize = 12.sp,
-                        color = TextSecondaryMuted
+                        color = MaterialTheme.colorScheme.onSurfaceVariant
                     )
                 }
             }
         } else {
-            // Video Player Container (Expanded height to 460.dp for generous viewport)
+            // Video Player Container
             Card(
                 modifier = Modifier
                     .fillMaxWidth()
                     .height(460.dp),
                 colors = CardDefaults.cardColors(containerColor = Color.Black),
-                shape = RoundedCornerShape(16.dp)
+                shape = RoundedCornerShape(20.dp)
             ) {
                 Column(modifier = Modifier.fillMaxSize()) {
                     Box(
@@ -236,11 +245,11 @@ fun RotateVideoScreen(
                         }
                     }
 
-                    // Player Toolbar Controls (Directly updates rotation & active segment) - Clean Modern Style
+                    // Player Toolbar Controls
                     Surface(
                         modifier = Modifier.fillMaxWidth(),
-                        color = Color.White,
-                        border = BorderStroke(1.dp, SurfaceBorderLight)
+                        color = MaterialTheme.colorScheme.surfaceContainerLow,
+                        border = BorderStroke(1.dp, MaterialTheme.colorScheme.outlineVariant)
                     ) {
                         Row(
                             modifier = Modifier
@@ -260,9 +269,11 @@ fun RotateVideoScreen(
                                     }
                                 },
                                 shape = RoundedCornerShape(14.dp),
-                                color = Color(0xFFF1F5F9),
-                                border = BorderStroke(1.dp, Color(0xFFE2E8F0)),
-                                modifier = Modifier.size(50.dp)
+                                color = MaterialTheme.colorScheme.surfaceContainerHigh,
+                                border = BorderStroke(1.dp, MaterialTheme.colorScheme.outlineVariant),
+                                modifier = Modifier
+                                    .size(50.dp)
+                                    .testTag("rotate_ccw_button")
                             ) {
                                 Box(contentAlignment = Alignment.Center) {
                                     Icon(
@@ -285,9 +296,11 @@ fun RotateVideoScreen(
                                     }
                                 },
                                 shape = RoundedCornerShape(14.dp),
-                                color = Color(0xFFF1F5F9),
-                                border = BorderStroke(1.dp, Color(0xFFE2E8F0)),
-                                modifier = Modifier.size(50.dp)
+                                color = MaterialTheme.colorScheme.surfaceContainerHigh,
+                                border = BorderStroke(1.dp, MaterialTheme.colorScheme.outlineVariant),
+                                modifier = Modifier
+                                    .size(50.dp)
+                                    .testTag("rotate_cw_button")
                             ) {
                                 Box(contentAlignment = Alignment.Center) {
                                     Icon(
@@ -303,15 +316,20 @@ fun RotateVideoScreen(
                             Surface(
                                 onClick = onToggleFlipHorizontal,
                                 shape = RoundedCornerShape(14.dp),
-                                color = if (flipHorizontal) MaterialTheme.colorScheme.primary else Color(0xFFF1F5F9),
-                                border = BorderStroke(1.dp, if (flipHorizontal) MaterialTheme.colorScheme.primary else Color(0xFFE2E8F0)),
-                                modifier = Modifier.size(50.dp)
+                                color = if (flipHorizontal) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.surfaceContainerHigh,
+                                border = BorderStroke(
+                                    1.dp,
+                                    if (flipHorizontal) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.outlineVariant
+                                ),
+                                modifier = Modifier
+                                    .size(50.dp)
+                                    .testTag("rotate_flip_h_button")
                             ) {
                                 Box(contentAlignment = Alignment.Center) {
                                     Icon(
                                         imageVector = Icons.Default.SwapHoriz,
                                         contentDescription = "Flip Horizontal",
-                                        tint = if (flipHorizontal) Color.White else MaterialTheme.colorScheme.primary,
+                                        tint = if (flipHorizontal) MaterialTheme.colorScheme.onPrimary else MaterialTheme.colorScheme.primary,
                                         modifier = Modifier.size(24.dp)
                                     )
                                 }
@@ -321,15 +339,20 @@ fun RotateVideoScreen(
                             Surface(
                                 onClick = onToggleFlipVertical,
                                 shape = RoundedCornerShape(14.dp),
-                                color = if (flipVertical) MaterialTheme.colorScheme.primary else Color(0xFFF1F5F9),
-                                border = BorderStroke(1.dp, if (flipVertical) MaterialTheme.colorScheme.primary else Color(0xFFE2E8F0)),
-                                modifier = Modifier.size(50.dp)
+                                color = if (flipVertical) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.surfaceContainerHigh,
+                                border = BorderStroke(
+                                    1.dp,
+                                    if (flipVertical) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.outlineVariant
+                                ),
+                                modifier = Modifier
+                                    .size(50.dp)
+                                    .testTag("rotate_flip_v_button")
                             ) {
                                 Box(contentAlignment = Alignment.Center) {
                                     Icon(
                                         imageVector = Icons.Default.SwapVert,
                                         contentDescription = "Flip Vertical",
-                                        tint = if (flipVertical) Color.White else MaterialTheme.colorScheme.primary,
+                                        tint = if (flipVertical) MaterialTheme.colorScheme.onPrimary else MaterialTheme.colorScheme.primary,
                                         modifier = Modifier.size(24.dp)
                                     )
                                 }
@@ -342,21 +365,21 @@ fun RotateVideoScreen(
             // Explicit Rotation Mode Selector Card
             Card(
                 modifier = Modifier.fillMaxWidth(),
-                colors = CardDefaults.cardColors(containerColor = Color.White),
-                border = BorderStroke(1.dp, SurfaceBorderLight),
-                shape = RoundedCornerShape(14.dp)
+                colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceContainerLow),
+                border = BorderStroke(1.dp, MaterialTheme.colorScheme.outlineVariant),
+                shape = RoundedCornerShape(18.dp)
             ) {
                 Column(modifier = Modifier.padding(16.dp)) {
                     Text(
                         text = "Rotation Scope Mode",
                         fontSize = 15.sp,
                         fontWeight = FontWeight.Bold,
-                        color = TextPrimaryDark
+                        color = MaterialTheme.colorScheme.onSurface
                     )
                     Text(
                         text = "Select whether to rotate the entire video or specific time ranges",
                         fontSize = 11.sp,
-                        color = TextSecondaryMuted,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
                         modifier = Modifier.padding(top = 2.dp, bottom = 12.dp)
                     )
 
@@ -368,27 +391,45 @@ fun RotateVideoScreen(
                         Surface(
                             modifier = Modifier
                                 .weight(1f)
-                                .clickable {
-                                    onSetTimelineRotateEnabled(false)
-                                },
-                            shape = RoundedCornerShape(10.dp),
-                            color = if (!isTimelineRotateEnabled) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.primaryContainer,
-                            border = BorderStroke(1.dp, if (!isTimelineRotateEnabled) MaterialTheme.colorScheme.primary else SurfaceBorderLight)
+                                .testTag("rotate_mode_full")
+                                .clickable { onSetTimelineRotateEnabled(false) },
+                            shape = RoundedCornerShape(12.dp),
+                            color = if (!isTimelineRotateEnabled) {
+                                MaterialTheme.colorScheme.primary
+                            } else {
+                                MaterialTheme.colorScheme.primaryContainer
+                            },
+                            border = BorderStroke(
+                                1.dp,
+                                if (!isTimelineRotateEnabled) {
+                                    MaterialTheme.colorScheme.primary
+                                } else {
+                                    MaterialTheme.colorScheme.outlineVariant
+                                }
+                            )
                         ) {
                             Column(
                                 modifier = Modifier.padding(12.dp),
                                 horizontalAlignment = Alignment.CenterHorizontally
                             ) {
                                 Text(
-                                    text = "🔄 Full Video",
+                                    text = "Full Video",
                                     fontSize = 13.sp,
                                     fontWeight = FontWeight.Bold,
-                                    color = if (!isTimelineRotateEnabled) Color.White else TextPrimaryDark
+                                    color = if (!isTimelineRotateEnabled) {
+                                        MaterialTheme.colorScheme.onPrimary
+                                    } else {
+                                        MaterialTheme.colorScheme.onPrimaryContainer
+                                    }
                                 )
                                 Text(
                                     text = "Rotate 100% video",
                                     fontSize = 10.sp,
-                                    color = if (!isTimelineRotateEnabled) Color.White.copy(alpha = 0.8f) else TextSecondaryMuted
+                                    color = if (!isTimelineRotateEnabled) {
+                                        MaterialTheme.colorScheme.onPrimary.copy(alpha = 0.8f)
+                                    } else {
+                                        MaterialTheme.colorScheme.onPrimaryContainer.copy(alpha = 0.75f)
+                                    }
                                 )
                             }
                         }
@@ -397,27 +438,45 @@ fun RotateVideoScreen(
                         Surface(
                             modifier = Modifier
                                 .weight(1f)
-                                .clickable {
-                                    onSetTimelineRotateEnabled(true)
-                                },
-                            shape = RoundedCornerShape(10.dp),
-                            color = if (isTimelineRotateEnabled) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.primaryContainer,
-                            border = BorderStroke(1.dp, if (isTimelineRotateEnabled) MaterialTheme.colorScheme.primary else SurfaceBorderLight)
+                                .testTag("rotate_mode_timeline")
+                                .clickable { onSetTimelineRotateEnabled(true) },
+                            shape = RoundedCornerShape(12.dp),
+                            color = if (isTimelineRotateEnabled) {
+                                MaterialTheme.colorScheme.primary
+                            } else {
+                                MaterialTheme.colorScheme.primaryContainer
+                            },
+                            border = BorderStroke(
+                                1.dp,
+                                if (isTimelineRotateEnabled) {
+                                    MaterialTheme.colorScheme.primary
+                                } else {
+                                    MaterialTheme.colorScheme.outlineVariant
+                                }
+                            )
                         ) {
                             Column(
                                 modifier = Modifier.padding(12.dp),
                                 horizontalAlignment = Alignment.CenterHorizontally
                             ) {
                                 Text(
-                                    text = "⏱️ Time Ranges",
+                                    text = "Time Ranges",
                                     fontSize = 13.sp,
                                     fontWeight = FontWeight.Bold,
-                                    color = if (isTimelineRotateEnabled) Color.White else TextPrimaryDark
+                                    color = if (isTimelineRotateEnabled) {
+                                        MaterialTheme.colorScheme.onPrimary
+                                    } else {
+                                        MaterialTheme.colorScheme.onPrimaryContainer
+                                    }
                                 )
                                 Text(
                                     text = "Multi-part ranges",
                                     fontSize = 10.sp,
-                                    color = if (isTimelineRotateEnabled) Color.White.copy(alpha = 0.8f) else TextSecondaryMuted
+                                    color = if (isTimelineRotateEnabled) {
+                                        MaterialTheme.colorScheme.onPrimary.copy(alpha = 0.8f)
+                                    } else {
+                                        MaterialTheme.colorScheme.onPrimaryContainer.copy(alpha = 0.75f)
+                                    }
                                 )
                             }
                         }
@@ -429,12 +488,12 @@ fun RotateVideoScreen(
                                 .fillMaxWidth()
                                 .padding(top = 12.dp),
                             color = MaterialTheme.colorScheme.primaryContainer,
-                            shape = RoundedCornerShape(8.dp)
+                            shape = RoundedCornerShape(10.dp)
                         ) {
                             Text(
-                                text = "💡 Full video mode active. Tap the 4 control buttons under the video player above to adjust angle (${rotationDegrees}°) or flip settings.",
+                                text = "Full video mode active. Tap the 4 control buttons under the video player above to adjust angle (${rotationDegrees}°) or flip settings.",
                                 fontSize = 11.sp,
-                                color = TextPrimaryDark,
+                                color = MaterialTheme.colorScheme.onPrimaryContainer,
                                 modifier = Modifier.padding(10.dp)
                             )
                         }
@@ -452,18 +511,30 @@ fun RotateVideoScreen(
                             verticalArrangement = Arrangement.spacedBy(12.dp)
                         ) {
                             val durationMs = selectedVideo.durationMs.coerceAtLeast(1000L)
+                            val maxStartBound = (durationMs - 100L).coerceAtLeast(0L)
 
                             // Single Range Fallback or Default Range Controls
                             if (rotateParts.isEmpty()) {
-                                val safeStartMs = rotateStartMs.coerceIn(0L, (durationMs - 100L).coerceAtLeast(0L))
-                                val safeEndMs = rotateEndMs.coerceIn((safeStartMs + 100L).coerceAtLeast(100L), durationMs)
+                                val safeStartMs = rotateStartMs.coerceIn(0L, maxStartBound)
+                                val minEndBound = (safeStartMs + 100L).coerceAtMost(durationMs)
+                                val safeEndMs = rotateEndMs.coerceIn(minEndBound, durationMs)
 
                                 Row(
                                     modifier = Modifier.fillMaxWidth(),
                                     horizontalArrangement = Arrangement.SpaceBetween
                                 ) {
-                                    Text("Start: ${VideoProcessor.formatDuration(safeStartMs)}", fontSize = 12.sp, fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.primary)
-                                    Text("End: ${VideoProcessor.formatDuration(safeEndMs)}", fontSize = 12.sp, fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.primary)
+                                    Text(
+                                        "Start: ${VideoProcessor.formatDuration(safeStartMs)}",
+                                        fontSize = 12.sp,
+                                        fontWeight = FontWeight.Bold,
+                                        color = MaterialTheme.colorScheme.primary
+                                    )
+                                    Text(
+                                        "End: ${VideoProcessor.formatDuration(safeEndMs)}",
+                                        fontSize = 12.sp,
+                                        fontWeight = FontWeight.Bold,
+                                        color = MaterialTheme.colorScheme.primary
+                                    )
                                 }
 
                                 RangeSlider(
@@ -484,9 +555,9 @@ fun RotateVideoScreen(
                             rotateParts.forEachIndexed { index, part ->
                                 Surface(
                                     modifier = Modifier.fillMaxWidth(),
-                                    shape = RoundedCornerShape(12.dp),
-                                    color = Color(0xFFF8FAFC),
-                                    border = BorderStroke(1.dp, Color(0xFFE2E8F0))
+                                    shape = RoundedCornerShape(14.dp),
+                                    color = MaterialTheme.colorScheme.surfaceContainerHigh,
+                                    border = BorderStroke(1.dp, MaterialTheme.colorScheme.outlineVariant)
                                 ) {
                                     Column(modifier = Modifier.padding(12.dp)) {
                                         Row(
@@ -498,24 +569,31 @@ fun RotateVideoScreen(
                                                 text = "Part ${index + 1}: ${VideoProcessor.formatDuration(part.startMs)} - ${VideoProcessor.formatDuration(part.endMs)} (${part.rotationDegrees}°${if (part.flipHorizontal) ", Flip H" else ""}${if (part.flipVertical) ", Flip V" else ""})",
                                                 fontSize = 13.sp,
                                                 fontWeight = FontWeight.Bold,
-                                                color = MaterialTheme.colorScheme.primary
+                                                color = MaterialTheme.colorScheme.primary,
+                                                modifier = Modifier.weight(1f)
                                             )
 
                                             if (rotateParts.size > 1) {
                                                 IconButton(
                                                     onClick = { onRemoveRotatePart(part.id) },
-                                                    modifier = Modifier.size(28.dp)
+                                                    modifier = Modifier.size(48.dp)
                                                 ) {
-                                                    Icon(Icons.Default.Delete, contentDescription = "Remove Part", tint = Color(0xFFEF5350), modifier = Modifier.size(18.dp))
+                                                    Icon(
+                                                        Icons.Default.Delete,
+                                                        contentDescription = "Remove Part",
+                                                        tint = MaterialTheme.colorScheme.error,
+                                                        modifier = Modifier.size(20.dp)
+                                                    )
                                                 }
                                             }
                                         }
 
                                         Spacer(modifier = Modifier.height(4.dp))
 
-                                        // Part Range Slider
-                                        val pStart = part.startMs.coerceIn(0L, durationMs - 100L)
-                                        val pEnd = part.endMs.coerceIn(pStart + 100L, durationMs)
+                                        // Part Range Slider with safe bounds
+                                        val pStart = part.startMs.coerceIn(0L, maxStartBound)
+                                        val pMinEnd = (pStart + 100L).coerceAtMost(durationMs)
+                                        val pEnd = part.endMs.coerceIn(pMinEnd, durationMs)
 
                                         RangeSlider(
                                             value = pStart.toFloat()..pEnd.toFloat(),
@@ -534,10 +612,10 @@ fun RotateVideoScreen(
                                             )
                                         )
 
-                                        // Part Rotation & Flip Action Buttons (Same 4 controls as player above)
+                                        // Part Rotation & Flip Action Buttons
                                         Row(
                                             modifier = Modifier.fillMaxWidth(),
-                                            horizontalArrangement = Arrangement.spacedBy(4.dp)
+                                            horizontalArrangement = Arrangement.spacedBy(6.dp)
                                         ) {
                                             // 1. Rotate CCW (-90)
                                             OutlinedButton(
@@ -547,11 +625,18 @@ fun RotateVideoScreen(
                                                     onSetRotationDegrees(newDeg)
                                                     onSetTimelineRange(part.startMs, part.endMs)
                                                 },
-                                                shape = RoundedCornerShape(8.dp),
-                                                modifier = Modifier.weight(1f),
+                                                shape = RoundedCornerShape(10.dp),
+                                                modifier = Modifier
+                                                    .weight(1f)
+                                                    .height(48.dp),
                                                 contentPadding = PaddingValues(vertical = 6.dp, horizontal = 2.dp)
                                             ) {
-                                                Icon(Icons.Default.RotateLeft, contentDescription = "Rotate CCW", tint = MaterialTheme.colorScheme.primary, modifier = Modifier.size(16.dp))
+                                                Icon(
+                                                    Icons.Default.RotateLeft,
+                                                    contentDescription = "Rotate CCW",
+                                                    tint = MaterialTheme.colorScheme.primary,
+                                                    modifier = Modifier.size(18.dp)
+                                                )
                                             }
 
                                             // 2. Rotate CW (+90)
@@ -562,11 +647,18 @@ fun RotateVideoScreen(
                                                     onSetRotationDegrees(newDeg)
                                                     onSetTimelineRange(part.startMs, part.endMs)
                                                 },
-                                                shape = RoundedCornerShape(8.dp),
-                                                modifier = Modifier.weight(1f),
+                                                shape = RoundedCornerShape(10.dp),
+                                                modifier = Modifier
+                                                    .weight(1f)
+                                                    .height(48.dp),
                                                 contentPadding = PaddingValues(vertical = 6.dp, horizontal = 2.dp)
                                             ) {
-                                                Icon(Icons.Default.RotateRight, contentDescription = "Rotate CW", tint = MaterialTheme.colorScheme.primary, modifier = Modifier.size(16.dp))
+                                                Icon(
+                                                    Icons.Default.RotateRight,
+                                                    contentDescription = "Rotate CW",
+                                                    tint = MaterialTheme.colorScheme.primary,
+                                                    modifier = Modifier.size(18.dp)
+                                                )
                                             }
 
                                             // 3. Flip Horizontal
@@ -577,19 +669,28 @@ fun RotateVideoScreen(
                                                     if (flipHorizontal != newFlipH) onToggleFlipHorizontal()
                                                     onSetTimelineRange(part.startMs, part.endMs)
                                                 },
-                                                shape = RoundedCornerShape(8.dp),
+                                                shape = RoundedCornerShape(10.dp),
                                                 colors = ButtonDefaults.outlinedButtonColors(
-                                                    containerColor = if (part.flipHorizontal) MaterialTheme.colorScheme.primary.copy(alpha = 0.15f) else Color.Transparent
+                                                    containerColor = if (part.flipHorizontal) {
+                                                        MaterialTheme.colorScheme.primary.copy(alpha = 0.16f)
+                                                    } else {
+                                                        Color.Transparent
+                                                    }
                                                 ),
-                                                border = BorderStroke(1.dp, if (part.flipHorizontal) MaterialTheme.colorScheme.primary else Color(0xFFCBD5E1)),
-                                                modifier = Modifier.weight(1f),
+                                                border = BorderStroke(
+                                                    1.dp,
+                                                    if (part.flipHorizontal) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.outline
+                                                ),
+                                                modifier = Modifier
+                                                    .weight(1f)
+                                                    .height(48.dp),
                                                 contentPadding = PaddingValues(vertical = 6.dp, horizontal = 2.dp)
                                             ) {
                                                 Icon(
                                                     Icons.Default.SwapHoriz,
-                                                    contentDescription = "Flip H",
-                                                    tint = if (part.flipHorizontal) MaterialTheme.colorScheme.primary else Color(0xFF64748B),
-                                                    modifier = Modifier.size(16.dp)
+                                                    contentDescription = "Flip Horizontal",
+                                                    tint = if (part.flipHorizontal) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurfaceVariant,
+                                                    modifier = Modifier.size(18.dp)
                                                 )
                                             }
 
@@ -601,19 +702,28 @@ fun RotateVideoScreen(
                                                     if (flipVertical != newFlipV) onToggleFlipVertical()
                                                     onSetTimelineRange(part.startMs, part.endMs)
                                                 },
-                                                shape = RoundedCornerShape(8.dp),
+                                                shape = RoundedCornerShape(10.dp),
                                                 colors = ButtonDefaults.outlinedButtonColors(
-                                                    containerColor = if (part.flipVertical) MaterialTheme.colorScheme.primary.copy(alpha = 0.15f) else Color.Transparent
+                                                    containerColor = if (part.flipVertical) {
+                                                        MaterialTheme.colorScheme.primary.copy(alpha = 0.16f)
+                                                    } else {
+                                                        Color.Transparent
+                                                    }
                                                 ),
-                                                border = BorderStroke(1.dp, if (part.flipVertical) MaterialTheme.colorScheme.primary else Color(0xFFCBD5E1)),
-                                                modifier = Modifier.weight(1f),
+                                                border = BorderStroke(
+                                                    1.dp,
+                                                    if (part.flipVertical) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.outline
+                                                ),
+                                                modifier = Modifier
+                                                    .weight(1f)
+                                                    .height(48.dp),
                                                 contentPadding = PaddingValues(vertical = 6.dp, horizontal = 2.dp)
                                             ) {
                                                 Icon(
                                                     Icons.Default.SwapVert,
-                                                    contentDescription = "Flip V",
-                                                    tint = if (part.flipVertical) MaterialTheme.colorScheme.primary else Color(0xFF64748B),
-                                                    modifier = Modifier.size(16.dp)
+                                                    contentDescription = "Flip Vertical",
+                                                    tint = if (part.flipVertical) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurfaceVariant,
+                                                    modifier = Modifier.size(18.dp)
                                                 )
                                             }
                                         }
@@ -624,13 +734,26 @@ fun RotateVideoScreen(
                             // Add Part Button
                             OutlinedButton(
                                 onClick = onAddRotatePart,
-                                shape = RoundedCornerShape(10.dp),
+                                shape = RoundedCornerShape(12.dp),
                                 border = BorderStroke(1.dp, MaterialTheme.colorScheme.primary),
-                                modifier = Modifier.fillMaxWidth()
+                                modifier = Modifier
+                                    .fillMaxWidth()
+                                    .height(48.dp)
+                                    .testTag("rotate_add_part_button")
                             ) {
-                                Icon(Icons.Default.Add, contentDescription = null, tint = MaterialTheme.colorScheme.primary, modifier = Modifier.size(18.dp))
+                                Icon(
+                                    Icons.Default.Add,
+                                    contentDescription = null,
+                                    tint = MaterialTheme.colorScheme.primary,
+                                    modifier = Modifier.size(18.dp)
+                                )
                                 Spacer(modifier = Modifier.width(6.dp))
-                                Text("Add Rotation Part", fontSize = 13.sp, fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.primary)
+                                Text(
+                                    "Add Rotation Part",
+                                    fontSize = 13.sp,
+                                    fontWeight = FontWeight.Bold,
+                                    color = MaterialTheme.colorScheme.primary
+                                )
                             }
                         }
                     }
@@ -642,10 +765,11 @@ fun RotateVideoScreen(
                 onClick = onProcessRotate,
                 enabled = !isProcessing,
                 colors = ButtonDefaults.buttonColors(containerColor = MaterialTheme.colorScheme.primary),
-                shape = RoundedCornerShape(14.dp),
+                shape = RoundedCornerShape(16.dp),
                 modifier = Modifier
                     .fillMaxWidth()
-                    .height(52.dp)
+                    .height(54.dp)
+                    .testTag("rotate_save_button")
             ) {
                 Icon(
                     imageVector = Icons.Default.RotateRight,
@@ -662,3 +786,4 @@ fun RotateVideoScreen(
         }
     }
 }
+
