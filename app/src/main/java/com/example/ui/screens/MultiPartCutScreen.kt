@@ -532,7 +532,7 @@ fun MultiPartCutScreen(
                                 },
                                 valueRange = 0f..safeMaxMs,
                                 colors = SliderDefaults.colors(
-                                    thumbColor = activeColor,
+                                    thumbColor = Color.Transparent,
                                     activeTrackColor = Color.Transparent,
                                     inactiveTrackColor = Color.Transparent
                                 ),

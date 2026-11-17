@@ -22,6 +22,7 @@ import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.layout.widthIn
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
@@ -71,6 +72,7 @@ import androidx.compose.ui.graphics.asImageBitmap
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.compose.ui.viewinterop.AndroidView
@@ -179,10 +181,13 @@ fun SingleCutScreen(
                         verticalAlignment = Alignment.CenterVertically
                     ) {
                         Text(
-                            text = selectedVideo?.title?.substringAfterLast('.')?.uppercase() ?: "MP4",
+                            text = selectedVideo?.title?.substringBeforeLast('.') ?: "MP4",
                             fontWeight = FontWeight.Bold,
                             fontSize = 13.sp,
-                            color = TextPrimaryDark
+                            color = TextPrimaryDark,
+                            maxLines = 1,
+                            overflow = TextOverflow.Ellipsis,
+                            modifier = Modifier.widthIn(max = 170.dp)
                         )
                         Spacer(modifier = Modifier.width(4.dp))
                         Text("▾", fontSize = 11.sp, color = TextSecondaryMuted)
@@ -462,7 +467,7 @@ fun SingleCutScreen(
                             }
                         }
 
-                        // Range Slider directly over filmstrip container
+                        // Range Slider directly over filmstrip container (transparent visuals; custom < > handles show)
                         RangeSlider(
                             value = safeStartFloat..safeEndFloat,
                             onValueChange = { range ->
@@ -472,7 +477,7 @@ fun SingleCutScreen(
                             },
                             valueRange = 0f..maxDurationFloat,
                             colors = SliderDefaults.colors(
-                                thumbColor = MaterialTheme.colorScheme.primary,
+                                thumbColor = Color.Transparent,
                                 activeTrackColor = Color.Transparent,
                                 inactiveTrackColor = Color.Transparent
                             ),

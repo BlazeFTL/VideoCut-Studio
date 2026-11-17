@@ -29,6 +29,7 @@ import androidx.compose.material.icons.filled.HighQuality
 import androidx.compose.material.icons.filled.PlayArrow
 import androidx.compose.material.icons.filled.Speed
 import androidx.compose.material.icons.filled.Tune
+import androidx.compose.material.icons.outlined.Compress
 import androidx.compose.material.icons.outlined.Movie
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
@@ -117,21 +118,31 @@ fun CompressorScreen(
             .fillMaxSize()
             .background(MaterialTheme.colorScheme.background)
             .padding(16.dp),
-        verticalArrangement = Arrangement.spacedBy(16.dp)
+        verticalArrangement = Arrangement.spacedBy(14.dp)
     ) {
+        // Header with inline icon matching original layout
         item {
             Column {
+                Row(verticalAlignment = Alignment.CenterVertically) {
+                    Icon(
+                        imageVector = Icons.Outlined.Compress,
+                        contentDescription = null,
+                        tint = MaterialTheme.colorScheme.primary,
+                        modifier = Modifier.size(24.dp)
+                    )
+                    Spacer(modifier = Modifier.width(8.dp))
+                    Text(
+                        text = "Video Compressor",
+                        fontSize = 22.sp,
+                        fontWeight = FontWeight.ExtraBold,
+                        color = TextPrimaryDark
+                    )
+                }
                 Text(
-                    text = "Video Compressor",
-                    fontSize = 22.sp,
-                    fontWeight = FontWeight.ExtraBold,
-                    color = TextPrimaryDark
-                )
-                Text(
-                    text = "Shrink file size with x264/x265 CRF, speed presets or target MB.",
-                    fontSize = 13.sp,
+                    text = "High performance video size reduction with CRF, H.265 & custom target size",
+                    fontSize = 12.sp,
                     color = TextSecondaryMuted,
-                    modifier = Modifier.padding(top = 2.dp)
+                    modifier = Modifier.padding(top = 4.dp)
                 )
             }
         }
@@ -157,7 +168,7 @@ fun CompressorScreen(
                     ) {
                         Box(
                             modifier = Modifier
-                                .size(48.dp)
+                                .size(44.dp)
                                 .clip(RoundedCornerShape(12.dp))
                                 .background(MaterialTheme.colorScheme.primaryContainer),
                             contentAlignment = Alignment.Center
@@ -166,7 +177,7 @@ fun CompressorScreen(
                                 imageVector = Icons.Outlined.Movie,
                                 contentDescription = "Video",
                                 tint = MaterialTheme.colorScheme.primary,
-                                modifier = Modifier.size(26.dp)
+                                modifier = Modifier.size(24.dp)
                             )
                         }
 
@@ -183,7 +194,7 @@ fun CompressorScreen(
                             )
                             Text(
                                 text = if (hasSourceVideo) {
-                                    "${VideoProcessor.formatFileSize(origBytes)} • ${selectedVideo!!.width}x${selectedVideo.height}"
+                                    "Size: ${VideoProcessor.formatFileSize(origBytes)}  •  ${selectedVideo!!.width}x${selectedVideo.height}"
                                 } else {
                                     "Pick a video to inspect compression estimate"
                                 },
@@ -193,92 +204,33 @@ fun CompressorScreen(
                         }
                     }
 
-                    Spacer(modifier = Modifier.width(8.dp))
+                    Spacer(modifier = Modifier.width(10.dp))
 
-                    OutlinedButton(
+                    Button(
                         onClick = {
                             pickerLauncher.launch(
                                 PickVisualMediaRequest(ActivityResultContracts.PickVisualMedia.VideoOnly)
                             )
                         },
                         shape = RoundedCornerShape(10.dp),
-                        border = BorderStroke(1.dp, MaterialTheme.colorScheme.primary),
+                        colors = ButtonDefaults.buttonColors(
+                            containerColor = MaterialTheme.colorScheme.primary,
+                            contentColor = Color.White
+                        ),
+                        contentPadding = PaddingValues(horizontal = 16.dp, vertical = 8.dp),
                         modifier = Modifier.testTag("pick_video_button")
                     ) {
                         Text(
-                            text = if (selectedVideo == null) "Pick Video" else "Change",
-                            fontSize = 12.sp,
-                            fontWeight = FontWeight.Bold,
-                            color = MaterialTheme.colorScheme.primary
+                            text = if (selectedVideo == null) "Pick Video" else "Pick",
+                            fontSize = 13.sp,
+                            fontWeight = FontWeight.Bold
                         )
                     }
                 }
             }
         }
 
-        // 2. Estimated Output Size Card (clean classic summary card with accurate math)
-        item {
-            Card(
-                modifier = Modifier.fillMaxWidth(),
-                colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.primaryContainer),
-                border = BorderStroke(1.dp, MaterialTheme.colorScheme.primary.copy(alpha = 0.25f)),
-                shape = RoundedCornerShape(16.dp)
-            ) {
-                Row(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .padding(16.dp),
-                    horizontalArrangement = Arrangement.SpaceBetween,
-                    verticalAlignment = Alignment.CenterVertically
-                ) {
-                    Column(modifier = Modifier.weight(1f)) {
-                        Text(
-                            text = "ESTIMATED OUTPUT SIZE",
-                            fontSize = 11.sp,
-                            fontWeight = FontWeight.Bold,
-                            color = MaterialTheme.colorScheme.onPrimaryContainer.copy(alpha = 0.8f),
-                            letterSpacing = 0.8.sp
-                        )
-                        Text(
-                            text = if (hasSourceVideo) "~${VideoProcessor.formatFileSize(estBytes)}" else "--",
-                            fontSize = 24.sp,
-                            fontWeight = FontWeight.ExtraBold,
-                            color = MaterialTheme.colorScheme.onPrimaryContainer,
-                            modifier = Modifier
-                                .padding(vertical = 2.dp)
-                                .testTag("compressor_estimated_size_text")
-                        )
-                        Text(
-                            text = if (hasSourceVideo) {
-                                "Output: ${outW}x${outH} • Save ~$savedPercent% (${VideoProcessor.formatFileSize(savedBytes)})"
-                            } else {
-                                "Select a source video above"
-                            },
-                            fontSize = 12.sp,
-                            color = MaterialTheme.colorScheme.onPrimaryContainer.copy(alpha = 0.85f)
-                        )
-                    }
-
-                    if (hasSourceVideo) {
-                        Box(
-                            modifier = Modifier
-                                .clip(RoundedCornerShape(10.dp))
-                                .background(MaterialTheme.colorScheme.primary)
-                                .padding(horizontal = 10.dp, vertical = 6.dp)
-                        ) {
-                            Text(
-                                text = "-$savedPercent%",
-                                fontSize = 14.sp,
-                                fontWeight = FontWeight.ExtraBold,
-                                color = Color.White
-                            )
-                        }
-                    }
-                }
-            }
-        }
-
-        // 3. Compression Engine Method Selector
+        // 2. Compression Engine Method Selector Card
         item {
             Card(
                 modifier = Modifier.fillMaxWidth(),
@@ -294,9 +246,9 @@ fun CompressorScreen(
                             tint = MaterialTheme.colorScheme.primary,
                             modifier = Modifier.size(18.dp)
                         )
-                        Spacer(modifier = Modifier.width(6.dp))
+                        Spacer(modifier = Modifier.width(8.dp))
                         Text(
-                            text = "Compression Engine",
+                            text = "Compression Engine Method",
                             fontWeight = FontWeight.Bold,
                             fontSize = 15.sp,
                             color = TextPrimaryDark
@@ -315,7 +267,7 @@ fun CompressorScreen(
                                 .clickable { onSetMethod(method) }
                                 .testTag("method_option_${method.name.lowercase()}"),
                             shape = RoundedCornerShape(12.dp),
-                            color = if (isSelected) MaterialTheme.colorScheme.primaryContainer.copy(alpha = 0.55f) else Color(0xFFF8FAFC),
+                            color = if (isSelected) MaterialTheme.colorScheme.primaryContainer.copy(alpha = 0.5f) else Color.White,
                             border = BorderStroke(
                                 width = if (isSelected) 1.5.dp else 1.dp,
                                 color = if (isSelected) MaterialTheme.colorScheme.primary else SurfaceBorderLight
@@ -324,17 +276,17 @@ fun CompressorScreen(
                             Row(
                                 modifier = Modifier
                                     .fillMaxWidth()
-                                    .padding(12.dp),
+                                    .padding(horizontal = 14.dp, vertical = 12.dp),
                                 verticalAlignment = Alignment.CenterVertically
                             ) {
-                                Box(
-                                    modifier = Modifier
-                                        .size(20.dp)
-                                        .clip(CircleShape)
-                                        .background(if (isSelected) MaterialTheme.colorScheme.primary else SurfaceBorderLight),
-                                    contentAlignment = Alignment.Center
-                                ) {
-                                    if (isSelected) {
+                                if (isSelected) {
+                                    Box(
+                                        modifier = Modifier
+                                            .size(20.dp)
+                                            .clip(CircleShape)
+                                            .background(MaterialTheme.colorScheme.primary),
+                                        contentAlignment = Alignment.Center
+                                    ) {
                                         Box(
                                             modifier = Modifier
                                                 .size(8.dp)
@@ -342,9 +294,8 @@ fun CompressorScreen(
                                                 .background(Color.White)
                                         )
                                     }
+                                    Spacer(modifier = Modifier.width(12.dp))
                                 }
-
-                                Spacer(modifier = Modifier.width(12.dp))
 
                                 Column(modifier = Modifier.weight(1f)) {
                                     Row(
@@ -359,9 +310,9 @@ fun CompressorScreen(
                                         )
                                         Box(
                                             modifier = Modifier
-                                                .clip(RoundedCornerShape(4.dp))
+                                                .clip(RoundedCornerShape(6.dp))
                                                 .background(
-                                                    if (isSelected) MaterialTheme.colorScheme.primary else Color(0xFFE2E8F0)
+                                                    if (isSelected) MaterialTheme.colorScheme.primaryContainer else Color(0xFFF1F5F9)
                                                 )
                                                 .padding(horizontal = 6.dp, vertical = 2.dp)
                                         ) {
@@ -369,7 +320,7 @@ fun CompressorScreen(
                                                 text = method.badge,
                                                 fontSize = 9.sp,
                                                 fontWeight = FontWeight.Bold,
-                                                color = if (isSelected) Color.White else TextSecondaryMuted
+                                                color = if (isSelected) MaterialTheme.colorScheme.primary else TextSecondaryMuted
                                             )
                                         }
                                     }
@@ -377,7 +328,7 @@ fun CompressorScreen(
                                         text = method.description,
                                         fontSize = 11.sp,
                                         color = TextSecondaryMuted,
-                                        modifier = Modifier.padding(top = 2.dp)
+                                        modifier = Modifier.padding(top = 3.dp)
                                     )
                                 }
                             }
@@ -387,7 +338,7 @@ fun CompressorScreen(
             }
         }
 
-        // 4. Method Parameters Card (CRF / Preset / Target MB / Lossless)
+        // 3. Method Parameters Card (with inline Possible Output Size summary inside)
         item {
             Card(
                 modifier = Modifier.fillMaxWidth(),
@@ -410,9 +361,9 @@ fun CompressorScreen(
                                         tint = MaterialTheme.colorScheme.primary,
                                         modifier = Modifier.size(18.dp)
                                     )
-                                    Spacer(modifier = Modifier.width(6.dp))
+                                    Spacer(modifier = Modifier.width(8.dp))
                                     Text(
-                                        text = "CRF Quality",
+                                        text = "CRF Quality Level",
                                         fontWeight = FontWeight.Bold,
                                         fontSize = 15.sp,
                                         color = TextPrimaryDark
@@ -427,7 +378,7 @@ fun CompressorScreen(
                                     Text(
                                         text = "CRF $crfValue",
                                         fontWeight = FontWeight.Bold,
-                                        fontSize = 13.sp,
+                                        fontSize = 12.sp,
                                         color = MaterialTheme.colorScheme.primary
                                     )
                                 }
@@ -435,12 +386,12 @@ fun CompressorScreen(
 
                             Text(
                                 text = if (currentMethod == CompressionMethod.H264_CRF)
-                                    "Default CRF 23. Higher CRF (28-32) produces smaller files with libx264 rate control."
+                                    "Recommended: CRF 23 (Lower = Higher Quality / Larger Size, Higher = Smaller File)"
                                 else
-                                    "Default CRF 28. HEVC libx265 achieves high efficiency at ~25-35% smaller sizes.",
-                                fontSize = 12.sp,
+                                    "Recommended: CRF 28 (HEVC libx265 yields ~25-35% smaller sizes at same visual quality)",
+                                fontSize = 11.sp,
                                 color = TextSecondaryMuted,
-                                modifier = Modifier.padding(top = 4.dp, bottom = 8.dp)
+                                modifier = Modifier.padding(top = 6.dp, bottom = 6.dp)
                             )
 
                             Slider(
@@ -451,11 +402,12 @@ fun CompressorScreen(
                                 modifier = Modifier.testTag("crf_slider"),
                                 colors = SliderDefaults.colors(
                                     thumbColor = MaterialTheme.colorScheme.primary,
-                                    activeTrackColor = MaterialTheme.colorScheme.primary
+                                    activeTrackColor = MaterialTheme.colorScheme.primary,
+                                    inactiveTrackColor = MaterialTheme.colorScheme.primaryContainer
                                 )
                             )
 
-                            Spacer(modifier = Modifier.height(12.dp))
+                            Spacer(modifier = Modifier.height(10.dp))
 
                             Text(
                                 text = "Encoding Speed / Preset",
@@ -472,13 +424,18 @@ fun CompressorScreen(
                             ) {
                                 presets.forEach { speed ->
                                     val isSpeedSelected = encodingSpeed.equals(speed, ignoreCase = true)
+                                    val label = if (speed == "medium") "Medium ★" else speed.replaceFirstChar { it.uppercase() }
                                     Surface(
                                         onClick = { onSetEncodingSpeed(speed) },
                                         shape = RoundedCornerShape(10.dp),
-                                        color = if (isSpeedSelected) MaterialTheme.colorScheme.primary else Color(0xFFF1F5F9),
+                                        color = if (isSpeedSelected) {
+                                            MaterialTheme.colorScheme.primary
+                                        } else {
+                                            MaterialTheme.colorScheme.primaryContainer.copy(alpha = 0.45f)
+                                        },
                                         border = BorderStroke(
                                             1.dp,
-                                            if (isSpeedSelected) MaterialTheme.colorScheme.primary else SurfaceBorderLight
+                                            if (isSpeedSelected) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.primary.copy(alpha = 0.18f)
                                         ),
                                         modifier = Modifier
                                             .weight(1f)
@@ -487,9 +444,9 @@ fun CompressorScreen(
                                     ) {
                                         Box(contentAlignment = Alignment.Center) {
                                             Text(
-                                                text = speed.replaceFirstChar { it.uppercase() },
+                                                text = label,
                                                 fontSize = 12.sp,
-                                                fontWeight = if (isSpeedSelected) FontWeight.Bold else FontWeight.Medium,
+                                                fontWeight = if (isSpeedSelected) FontWeight.Bold else FontWeight.SemiBold,
                                                 color = if (isSpeedSelected) Color.White else TextPrimaryDark,
                                                 maxLines = 1,
                                                 overflow = TextOverflow.Ellipsis
@@ -540,7 +497,8 @@ fun CompressorScreen(
                                 modifier = Modifier.testTag("target_size_slider"),
                                 colors = SliderDefaults.colors(
                                     thumbColor = MaterialTheme.colorScheme.primary,
-                                    activeTrackColor = MaterialTheme.colorScheme.primary
+                                    activeTrackColor = MaterialTheme.colorScheme.primary,
+                                    inactiveTrackColor = MaterialTheme.colorScheme.primaryContainer
                                 )
                             )
 
@@ -599,11 +557,66 @@ fun CompressorScreen(
                             }
                         }
                     }
+
+                    Spacer(modifier = Modifier.height(14.dp))
+
+                    // Inline Possible Output Size Summary Box (matches original card design)
+                    Box(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .clip(RoundedCornerShape(12.dp))
+                            .background(MaterialTheme.colorScheme.primaryContainer.copy(alpha = 0.55f))
+                            .padding(horizontal = 14.dp, vertical = 12.dp)
+                    ) {
+                        Row(
+                            modifier = Modifier.fillMaxWidth(),
+                            horizontalArrangement = Arrangement.SpaceBetween,
+                            verticalAlignment = Alignment.CenterVertically
+                        ) {
+                            Column(modifier = Modifier.weight(1f)) {
+                                Text(
+                                    text = "Possible Output Size",
+                                    fontSize = 11.sp,
+                                    color = TextSecondaryMuted
+                                )
+                                Text(
+                                    text = if (hasSourceVideo) "~${VideoProcessor.formatFileSize(estBytes)}" else "--",
+                                    fontSize = 18.sp,
+                                    fontWeight = FontWeight.ExtraBold,
+                                    color = MaterialTheme.colorScheme.primary,
+                                    modifier = Modifier.testTag("compressor_estimated_size_text")
+                                )
+                                if (hasSourceVideo && currentResolution != "Original Resolution") {
+                                    Text(
+                                        text = "Output: ${outW}x${outH}",
+                                        fontSize = 10.sp,
+                                        color = TextSecondaryMuted
+                                    )
+                                }
+                            }
+
+                            if (hasSourceVideo) {
+                                Box(
+                                    modifier = Modifier
+                                        .clip(RoundedCornerShape(10.dp))
+                                        .background(EmeraldSuccess)
+                                        .padding(horizontal = 12.dp, vertical = 6.dp)
+                                ) {
+                                    Text(
+                                        text = "-$savedPercent% (~${VideoProcessor.formatFileSize(savedBytes)} saved)",
+                                        fontSize = 11.sp,
+                                        fontWeight = FontWeight.Bold,
+                                        color = Color.White
+                                    )
+                                }
+                            }
+                        }
+                    }
                 }
             }
         }
 
-        // 5. Output Resolution Selector
+        // 4. Target Resolution Selector
         item {
             Card(
                 modifier = Modifier.fillMaxWidth(),
@@ -613,13 +626,13 @@ fun CompressorScreen(
             ) {
                 Column(modifier = Modifier.padding(16.dp)) {
                     Text(
-                        text = "Output Resolution",
+                        text = "Target Resolution",
                         fontWeight = FontWeight.Bold,
                         fontSize = 15.sp,
                         color = TextPrimaryDark
                     )
                     Text(
-                        text = "Downscaling lowers pixel count and reduces output file size",
+                        text = "Select output video dimensions (Default is Original Resolution)",
                         fontSize = 12.sp,
                         color = TextSecondaryMuted,
                         modifier = Modifier.padding(top = 2.dp, bottom = 10.dp)
@@ -677,7 +690,7 @@ fun CompressorScreen(
             }
         }
 
-        // 6. Compress & Save Action Buttons
+        // 5. Compress & Save Action Buttons
         item {
             Column(
                 modifier = Modifier.fillMaxWidth(),
@@ -691,7 +704,7 @@ fun CompressorScreen(
                         .testTag("compress_button"),
                     enabled = selectedVideo != null && !isProcessing,
                     colors = ButtonDefaults.buttonColors(containerColor = MaterialTheme.colorScheme.primary),
-                    shape = RoundedCornerShape(12.dp)
+                    shape = RoundedCornerShape(14.dp)
                 ) {
                     Icon(
                         imageVector = Icons.Default.Compress,
@@ -713,7 +726,7 @@ fun CompressorScreen(
                             .fillMaxWidth()
                             .height(48.dp)
                             .testTag("play_source_button"),
-                        shape = RoundedCornerShape(12.dp),
+                        shape = RoundedCornerShape(14.dp),
                         border = BorderStroke(1.dp, MaterialTheme.colorScheme.primary)
                     ) {
                         Icon(

@@ -113,7 +113,7 @@ fun SettingsScreen(
             .padding(16.dp),
         verticalArrangement = Arrangement.spacedBy(16.dp)
     ) {
-        // Section 1: App Color Theme
+        // Section 1: App Theme & Accents
         Card(
             modifier = Modifier.fillMaxWidth(),
             colors = CardDefaults.cardColors(containerColor = Color.White),
@@ -145,13 +145,13 @@ fun SettingsScreen(
 
                     Column {
                         Text(
-                            text = "App Color Theme",
+                            text = "App Theme & Accents",
                             fontWeight = FontWeight.Bold,
                             fontSize = 16.sp,
                             color = TextPrimaryDark
                         )
                         Text(
-                            text = "Choose a studio color palette",
+                            text = "Select from 6 Static or 6 Mixed Accent Themes",
                             fontSize = 12.sp,
                             color = TextSecondaryMuted
                         )
@@ -162,18 +162,19 @@ fun SettingsScreen(
 
                 TabRow(
                     selectedTabIndex = selectedThemeCategoryTab,
-                    containerColor = Color(0xFFF1F5F9),
+                    containerColor = MaterialTheme.colorScheme.primaryContainer.copy(alpha = 0.45f),
                     contentColor = MaterialTheme.colorScheme.primary,
                     indicator = { tabPositions ->
                         TabRowDefaults.SecondaryIndicator(
                             Modifier.tabIndicatorOffset(tabPositions[selectedThemeCategoryTab]),
                             color = MaterialTheme.colorScheme.primary,
-                            height = 3.dp
+                            height = 2.5.dp
                         )
                     },
+                    divider = {},
                     modifier = Modifier
                         .fillMaxWidth()
-                        .clip(RoundedCornerShape(10.dp))
+                        .clip(RoundedCornerShape(12.dp))
                 ) {
                     Tab(
                         selected = selectedThemeCategoryTab == 0,
@@ -182,7 +183,8 @@ fun SettingsScreen(
                             Text(
                                 "6 Static Colors",
                                 fontSize = 12.sp,
-                                fontWeight = if (selectedThemeCategoryTab == 0) FontWeight.Bold else FontWeight.Medium
+                                fontWeight = if (selectedThemeCategoryTab == 0) FontWeight.Bold else FontWeight.SemiBold,
+                                color = if (selectedThemeCategoryTab == 0) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.primary.copy(alpha = 0.7f)
                             )
                         }
                     )
@@ -193,7 +195,8 @@ fun SettingsScreen(
                             Text(
                                 "6 Mixed Accents",
                                 fontSize = 12.sp,
-                                fontWeight = if (selectedThemeCategoryTab == 1) FontWeight.Bold else FontWeight.Medium
+                                fontWeight = if (selectedThemeCategoryTab == 1) FontWeight.Bold else FontWeight.SemiBold,
+                                color = if (selectedThemeCategoryTab == 1) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.primary.copy(alpha = 0.7f)
                             )
                         }
                     )
@@ -267,7 +270,7 @@ fun SettingsScreen(
                             color = TextPrimaryDark
                         )
                         Text(
-                            text = if (isIgnoringBatteryOptimizations) "Unrestricted Background Processing Enabled" else "Optimized (May pause long transcodes)",
+                            text = if (isIgnoringBatteryOptimizations) "Unrestricted Background Processing Enabled" else "Optimized (App may be killed in background)",
                             fontSize = 12.sp,
                             color = if (isIgnoringBatteryOptimizations) EmeraldSuccess else Color(0xFFEA580C),
                             fontWeight = FontWeight.Medium
@@ -278,7 +281,7 @@ fun SettingsScreen(
                 Spacer(modifier = Modifier.height(10.dp))
 
                 Text(
-                    text = "Grant Battery Optimization Exemption so long cutting, joining, and CRF compression exports finish reliably when switching apps.",
+                    text = "To ensure video cutting, compression, join, and rotation tasks complete reliably when the app is in the background or screen turns off, grant Battery Optimization Exemption.",
                     fontSize = 12.sp,
                     color = TextSecondaryMuted
                 )
@@ -292,7 +295,7 @@ fun SettingsScreen(
                             .fillMaxWidth()
                             .height(48.dp)
                             .testTag("ignore_battery_optimization_btn"),
-                        shape = RoundedCornerShape(12.dp),
+                        shape = RoundedCornerShape(50),
                         colors = ButtonDefaults.buttonColors(containerColor = MaterialTheme.colorScheme.primary)
                     ) {
                         Icon(
@@ -309,7 +312,7 @@ fun SettingsScreen(
                         modifier = Modifier
                             .fillMaxWidth()
                             .height(48.dp),
-                        shape = RoundedCornerShape(12.dp),
+                        shape = RoundedCornerShape(50),
                         border = BorderStroke(1.dp, EmeraldSuccess)
                     ) {
                         Icon(
@@ -325,7 +328,7 @@ fun SettingsScreen(
             }
         }
 
-        // Section 3: Execution Priority & WakeLock
+        // Section 3: Background Execution Priority
         Card(
             modifier = Modifier.fillMaxWidth(),
             colors = CardDefaults.cardColors(containerColor = Color.White),
@@ -342,13 +345,13 @@ fun SettingsScreen(
                         modifier = Modifier
                             .size(38.dp)
                             .clip(CircleShape)
-                            .background(MaterialTheme.colorScheme.secondaryContainer),
+                            .background(MaterialTheme.colorScheme.primaryContainer),
                         contentAlignment = Alignment.Center
                     ) {
                         Icon(
                             imageVector = Icons.Default.Speed,
                             contentDescription = null,
-                            tint = MaterialTheme.colorScheme.secondary,
+                            tint = MaterialTheme.colorScheme.primary,
                             modifier = Modifier.size(20.dp)
                         )
                     }
@@ -357,13 +360,13 @@ fun SettingsScreen(
 
                     Column {
                         Text(
-                            text = "Execution Priority",
+                            text = "Background Execution Priority",
                             fontWeight = FontWeight.Bold,
                             fontSize = 16.sp,
                             color = TextPrimaryDark
                         )
                         Text(
-                            text = "Foreground service & CPU wake control",
+                            text = "Keep tasks alive without getting killed",
                             fontSize = 12.sp,
                             color = TextSecondaryMuted
                         )
@@ -376,12 +379,12 @@ fun SettingsScreen(
                     modifier = Modifier
                         .fillMaxWidth()
                         .clip(RoundedCornerShape(12.dp))
-                        .background(Color(0xFFF8FAFC))
+                        .background(Color(0xFFF1F5F9))
                         .padding(12.dp),
                     verticalAlignment = Alignment.CenterVertically,
                     horizontalArrangement = Arrangement.SpaceBetween
                 ) {
-                    Column(modifier = Modifier.weight(1f)) {
+                    Column(modifier = Modifier.weight(1f).padding(end = 8.dp)) {
                         Text(
                             text = "Foreground Processing Service",
                             fontWeight = FontWeight.Bold,
@@ -389,7 +392,7 @@ fun SettingsScreen(
                             color = TextPrimaryDark
                         )
                         Text(
-                            text = "Shows live progress notification and raises process priority",
+                            text = "Shows ongoing progress notification to give process high system priority",
                             fontSize = 11.sp,
                             color = TextSecondaryMuted
                         )
@@ -408,12 +411,12 @@ fun SettingsScreen(
                     modifier = Modifier
                         .fillMaxWidth()
                         .clip(RoundedCornerShape(12.dp))
-                        .background(Color(0xFFF8FAFC))
+                        .background(Color(0xFFF1F5F9))
                         .padding(12.dp),
                     verticalAlignment = Alignment.CenterVertically,
                     horizontalArrangement = Arrangement.SpaceBetween
                 ) {
-                    Column(modifier = Modifier.weight(1f)) {
+                    Column(modifier = Modifier.weight(1f).padding(end = 8.dp)) {
                         Text(
                             text = "Keep CPU Awake (WakeLock)",
                             fontWeight = FontWeight.Bold,
@@ -421,7 +424,7 @@ fun SettingsScreen(
                             color = TextPrimaryDark
                         )
                         Text(
-                            text = "Prevents deep sleep during active transcoding",
+                            text = "Prevents CPU from entering deep sleep during video transcoding",
                             fontSize = 11.sp,
                             color = TextSecondaryMuted
                         )
@@ -445,7 +448,7 @@ fun SettingsScreen(
                     )
                     Spacer(modifier = Modifier.width(6.dp))
                     Text(
-                        text = "Adaptive hardware fallback activates automatically when needed.",
+                        text = "Provided free RAM is available, tasks will finish seamlessly.",
                         fontSize = 11.sp,
                         color = TextSecondaryMuted
                     )
@@ -522,20 +525,20 @@ private fun ThemeOptionCard(
 ) {
     Surface(
         modifier = modifier
-            .clip(RoundedCornerShape(12.dp))
+            .clip(RoundedCornerShape(14.dp))
             .clickable(onClick = onClick)
             .testTag("theme_option_${theme.id}"),
-        shape = RoundedCornerShape(12.dp),
-        color = if (isSelected) theme.primaryColor.copy(alpha = 0.12f) else Color(0xFFF8FAFC),
+        shape = RoundedCornerShape(14.dp),
+        color = if (isSelected) theme.primaryColor.copy(alpha = 0.08f) else Color.White,
         border = BorderStroke(
-            width = if (isSelected) 2.dp else 1.dp,
+            width = if (isSelected) 1.8.dp else 1.dp,
             color = if (isSelected) theme.primaryColor else SurfaceBorderLight
         )
     ) {
         Column(
             modifier = Modifier
                 .fillMaxWidth()
-                .padding(12.dp),
+                .padding(14.dp),
             horizontalAlignment = Alignment.CenterHorizontally
         ) {
             Row(
@@ -544,7 +547,7 @@ private fun ThemeOptionCard(
             ) {
                 Box(
                     modifier = Modifier
-                        .size(26.dp)
+                        .size(24.dp)
                         .clip(CircleShape)
                         .background(theme.primaryColor)
                 )

@@ -134,17 +134,6 @@ fun FullscreenProcessingDialog(
             ) {
                 Spacer(modifier = Modifier.height(20.dp))
 
-                if (processName.isNotEmpty()) {
-                    Text(
-                        text = processName.uppercase(),
-                        fontSize = 11.sp,
-                        fontWeight = FontWeight.Bold,
-                        color = MaterialTheme.colorScheme.primary,
-                        letterSpacing = 1.sp,
-                        modifier = Modifier.padding(bottom = 4.dp)
-                    )
-                }
-
                 Text(
                     text = processName.ifEmpty { "Video Processing" },
                     fontSize = 24.sp,
