@@ -166,16 +166,3 @@ enum class AppTheme(
         fun fromId(id: String): AppTheme = values().firstOrNull { it.id == id } ?: MODERN_INDIGO
     }
 }
-
-enum class ThemeBrightnessMode(val id: String, val label: String) {
-    SYSTEM("system", "System"),
-    LIGHT("light", "Light"),
-    DARK("dark", "Dark"),
-    AMOLED("amoled", "AMOLED");
-
-    companion object {
-        fun fromId(id: String): ThemeBrightnessMode =
-            entries.firstOrNull { it.id == id } ?: SYSTEM
-    }
-}
-

@@ -49,10 +49,9 @@ import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
-import androidx.compose.material3.ExperimentalMaterial3ExpressiveApi
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
-import androidx.compose.material3.LinearWavyProgressIndicator
+import androidx.compose.material3.LinearProgressIndicator
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.RadioButton
@@ -85,9 +84,11 @@ import com.example.ui.theme.EmeraldContainer
 import com.example.ui.theme.EmeraldSuccess
 import com.example.ui.theme.RoseContainer
 import com.example.ui.theme.RoseError
+import com.example.ui.theme.SurfaceBorderLight
+import com.example.ui.theme.TextPrimaryDark
+import com.example.ui.theme.TextSecondaryMuted
 import com.example.util.VideoProcessor
 
-@OptIn(ExperimentalMaterial3ExpressiveApi::class)
 @Composable
 fun MultiPartCutScreen(
     selectedVideo: VideoItem?,
@@ -146,12 +147,12 @@ fun MultiPartCutScreen(
                     text = "Multi-Part Video Cutter",
                     fontSize = 22.sp,
                     fontWeight = FontWeight.ExtraBold,
-                    color = MaterialTheme.colorScheme.onBackground
+                    color = TextPrimaryDark
                 )
                 Text(
                     text = "Select exact video frames, cut multiple parts, and keep or remove them precisely.",
                     fontSize = 13.sp,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    color = TextSecondaryMuted,
                     modifier = Modifier.padding(top = 2.dp)
                 )
             }
@@ -161,16 +162,16 @@ fun MultiPartCutScreen(
         item {
             Card(
                 modifier = Modifier.fillMaxWidth(),
-                colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceContainerLow),
-                border = BorderStroke(1.dp, MaterialTheme.colorScheme.outlineVariant),
-                shape = RoundedCornerShape(18.dp)
+                colors = CardDefaults.cardColors(containerColor = Color.White),
+                border = BorderStroke(1.dp, SurfaceBorderLight),
+                shape = RoundedCornerShape(16.dp)
             ) {
                 Column(modifier = Modifier.padding(14.dp)) {
                     Text(
                         text = "Cutting Mode Strategy",
                         fontWeight = FontWeight.Bold,
                         fontSize = 14.sp,
-                        color = MaterialTheme.colorScheme.onSurface
+                        color = TextPrimaryDark
                     )
 
                     Spacer(modifier = Modifier.height(8.dp))
@@ -181,8 +182,8 @@ fun MultiPartCutScreen(
                     ) {
                         Surface(
                             onClick = { onSetMode(MultiPartCutMode.REMOVE_SELECTED) },
-                            color = if (mode == MultiPartCutMode.REMOVE_SELECTED) MaterialTheme.colorScheme.primaryContainer else MaterialTheme.colorScheme.surfaceContainer,
-                            border = BorderStroke(1.5.dp, if (mode == MultiPartCutMode.REMOVE_SELECTED) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.outlineVariant),
+                            color = if (mode == MultiPartCutMode.REMOVE_SELECTED) MaterialTheme.colorScheme.primaryContainer else Color(0xFFF8FAFC),
+                            border = BorderStroke(1.5.dp, if (mode == MultiPartCutMode.REMOVE_SELECTED) MaterialTheme.colorScheme.primary else SurfaceBorderLight),
                             shape = RoundedCornerShape(12.dp),
                             modifier = Modifier.weight(1f)
                         ) {
@@ -201,12 +202,12 @@ fun MultiPartCutScreen(
                                         text = "Remove Parts",
                                         fontWeight = FontWeight.Bold,
                                         fontSize = 12.sp,
-                                        color = if (mode == MultiPartCutMode.REMOVE_SELECTED) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurface
+                                        color = if (mode == MultiPartCutMode.REMOVE_SELECTED) MaterialTheme.colorScheme.primary else TextPrimaryDark
                                     )
                                     Text(
                                         text = "Delete selected ranges",
                                         fontSize = 10.sp,
-                                        color = MaterialTheme.colorScheme.onSurfaceVariant
+                                        color = TextSecondaryMuted
                                     )
                                 }
                             }
@@ -214,8 +215,8 @@ fun MultiPartCutScreen(
 
                         Surface(
                             onClick = { onSetMode(MultiPartCutMode.KEEP_SELECTED) },
-                            color = if (mode == MultiPartCutMode.KEEP_SELECTED) MaterialTheme.colorScheme.primaryContainer else MaterialTheme.colorScheme.surfaceContainer,
-                            border = BorderStroke(1.5.dp, if (mode == MultiPartCutMode.KEEP_SELECTED) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.outlineVariant),
+                            color = if (mode == MultiPartCutMode.KEEP_SELECTED) MaterialTheme.colorScheme.primaryContainer else Color(0xFFF8FAFC),
+                            border = BorderStroke(1.5.dp, if (mode == MultiPartCutMode.KEEP_SELECTED) MaterialTheme.colorScheme.primary else SurfaceBorderLight),
                             shape = RoundedCornerShape(12.dp),
                             modifier = Modifier.weight(1f)
                         ) {
@@ -234,12 +235,12 @@ fun MultiPartCutScreen(
                                         text = "Keep Parts",
                                         fontWeight = FontWeight.Bold,
                                         fontSize = 12.sp,
-                                        color = if (mode == MultiPartCutMode.KEEP_SELECTED) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurface
+                                        color = if (mode == MultiPartCutMode.KEEP_SELECTED) MaterialTheme.colorScheme.primary else TextPrimaryDark
                                     )
                                     Text(
                                         text = "Merge selected ranges",
                                         fontSize = 10.sp,
-                                        color = MaterialTheme.colorScheme.onSurfaceVariant
+                                        color = TextSecondaryMuted
                                     )
                                 }
                             }
@@ -253,9 +254,9 @@ fun MultiPartCutScreen(
         item {
             Card(
                 modifier = Modifier.fillMaxWidth(),
-                colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceContainerLow),
-                border = BorderStroke(1.dp, MaterialTheme.colorScheme.outlineVariant),
-                shape = RoundedCornerShape(18.dp)
+                colors = CardDefaults.cardColors(containerColor = Color.White),
+                border = BorderStroke(1.dp, SurfaceBorderLight),
+                shape = RoundedCornerShape(16.dp)
             ) {
                 Column(modifier = Modifier.padding(14.dp)) {
                     Row(
@@ -267,7 +268,7 @@ fun MultiPartCutScreen(
                             text = "Frame Precision Video Preview",
                             fontWeight = FontWeight.Bold,
                             fontSize = 14.sp,
-                            color = MaterialTheme.colorScheme.onSurface
+                            color = TextPrimaryDark
                         )
 
                         Button(
@@ -582,7 +583,7 @@ fun MultiPartCutScreen(
                                 text = selectedVideo.title,
                                 fontWeight = FontWeight.Bold,
                                 fontSize = 13.sp,
-                                color = MaterialTheme.colorScheme.onSurface,
+                                color = TextPrimaryDark,
                                 maxLines = 1,
                                 modifier = Modifier.weight(1f)
                             )
@@ -602,7 +603,7 @@ fun MultiPartCutScreen(
                         ) {
                             Icon(Icons.Outlined.Movie, contentDescription = null, tint = MaterialTheme.colorScheme.primary, modifier = Modifier.size(48.dp))
                             Spacer(modifier = Modifier.height(8.dp))
-                            Text("No video selected for multi-cut", fontSize = 14.sp, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                            Text("No video selected for multi-cut", fontSize = 14.sp, color = TextSecondaryMuted)
                             Spacer(modifier = Modifier.height(12.dp))
                             Button(
                                 onClick = {
@@ -630,21 +631,21 @@ fun MultiPartCutScreen(
             item {
                 Card(
                     modifier = Modifier.fillMaxWidth(),
-                    colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceContainerLow),
-                    border = BorderStroke(1.dp, MaterialTheme.colorScheme.outlineVariant),
-                    shape = RoundedCornerShape(18.dp)
+                    colors = CardDefaults.cardColors(containerColor = Color.White),
+                    border = BorderStroke(1.dp, SurfaceBorderLight),
+                    shape = RoundedCornerShape(16.dp)
                 ) {
                     Column(modifier = Modifier.padding(16.dp)) {
                         Text(
                             text = "Frame Timeline Strip Map",
                             fontWeight = FontWeight.Bold,
                             fontSize = 15.sp,
-                            color = MaterialTheme.colorScheme.onSurface
+                            color = TextPrimaryDark
                         )
                         Text(
                             text = "Visual preview of all cut segments overlaid on video frames",
                             fontSize = 12.sp,
-                            color = MaterialTheme.colorScheme.onSurfaceVariant,
+                            color = TextSecondaryMuted,
                             modifier = Modifier.padding(top = 2.dp)
                         )
 
@@ -681,7 +682,7 @@ fun MultiPartCutScreen(
                                 .fillMaxWidth()
                                 .height(20.dp)
                                 .clip(RoundedCornerShape(6.dp))
-                                .background(MaterialTheme.colorScheme.surfaceContainerHighest)
+                                .background(Color(0xFFE2E8F0))
                         ) {
                             val totalWidthPx = constraints.maxWidth.toFloat()
                             if (maxDurationMs > 0 && totalWidthPx > 0) {
@@ -708,9 +709,9 @@ fun MultiPartCutScreen(
                             modifier = Modifier.fillMaxWidth(),
                             horizontalArrangement = Arrangement.SpaceBetween
                         ) {
-                            Text("00:00.000", fontSize = 10.sp, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                            Text("00:00.000", fontSize = 10.sp, color = TextSecondaryMuted)
                             Text("Active Segments: ${segments.size}", fontSize = 10.sp, fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.primary)
-                            Text(VideoProcessor.formatDuration(maxDurationMs), fontSize = 10.sp, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                            Text(VideoProcessor.formatDuration(maxDurationMs), fontSize = 10.sp, color = TextSecondaryMuted)
                         }
                     }
                 }
@@ -727,7 +728,7 @@ fun MultiPartCutScreen(
                     text = "Added Cut Segments (${segments.size})",
                     fontWeight = FontWeight.Bold,
                     fontSize = 16.sp,
-                    color = MaterialTheme.colorScheme.onBackground
+                    color = TextPrimaryDark
                 )
 
                 if (selectedVideo != null && segments.isNotEmpty()) {
@@ -745,14 +746,14 @@ fun MultiPartCutScreen(
             item {
                 Card(
                     modifier = Modifier.fillMaxWidth(),
-                    colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceContainerLow),
-                    border = BorderStroke(1.dp, MaterialTheme.colorScheme.outlineVariant),
+                    colors = CardDefaults.cardColors(containerColor = Color.White),
+                    border = BorderStroke(1.dp, SurfaceBorderLight),
                     shape = RoundedCornerShape(14.dp)
                 ) {
                     Box(modifier = Modifier.padding(24.dp), contentAlignment = Alignment.Center) {
                         Text(
                             text = "No segments added yet. Select range and tap '+ Add Segment' above.",
-                            color = MaterialTheme.colorScheme.onSurfaceVariant,
+                            color = TextSecondaryMuted,
                             fontSize = 13.sp
                         )
                     }
@@ -790,9 +791,12 @@ fun MultiPartCutScreen(
                             color = MaterialTheme.colorScheme.primary
                         )
                     }
-                    LinearWavyProgressIndicator(
+                    LinearProgressIndicator(
                         progress = { processingProgress.coerceIn(0f, 1f) },
-                        modifier = Modifier.fillMaxWidth(),
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .height(6.dp)
+                            .clip(RoundedCornerShape(3.dp)),
                         color = MaterialTheme.colorScheme.primary,
                         trackColor = MaterialTheme.colorScheme.primaryContainer
                     )
@@ -956,8 +960,8 @@ private fun SegmentCardItem(
 ) {
     Card(
         modifier = Modifier.fillMaxWidth(),
-        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceContainerLow),
-        border = BorderStroke(1.dp, MaterialTheme.colorScheme.outlineVariant),
+        colors = CardDefaults.cardColors(containerColor = Color.White),
+        border = BorderStroke(1.dp, SurfaceBorderLight),
         shape = RoundedCornerShape(14.dp)
     ) {
         Row(
@@ -988,14 +992,14 @@ private fun SegmentCardItem(
                     text = "${VideoProcessor.formatDurationPrecise(segment.startMs)}  ➔  ${VideoProcessor.formatDurationPrecise(segment.endMs)}",
                     fontWeight = FontWeight.ExtraBold,
                     fontSize = 14.sp,
-                    color = MaterialTheme.colorScheme.onSurface
+                    color = TextPrimaryDark
                 )
 
                 val durSec = String.format(java.util.Locale.US, "%.1f", (segment.endMs - segment.startMs) / 1000.0)
                 Text(
                     text = "${if (mode == MultiPartCutMode.REMOVE_SELECTED) "Remove" else "Keep"} $durSec seconds",
                     fontSize = 12.sp,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                    color = TextSecondaryMuted
                 )
             }
 

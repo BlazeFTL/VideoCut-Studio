@@ -1,8 +1,7 @@
 package com.example.ui.screens
 
 import android.net.Uri
-import androidx.compose.animation.animateContentSize
-import androidx.compose.animation.core.animateFloatAsState
+import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
@@ -17,7 +16,6 @@ import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
-import androidx.compose.foundation.layout.widthIn
 import androidx.compose.foundation.lazy.grid.GridCells
 import androidx.compose.foundation.lazy.grid.GridItemSpan
 import androidx.compose.foundation.lazy.grid.LazyVerticalGrid
@@ -33,21 +31,16 @@ import androidx.compose.material.icons.outlined.ContentCut
 import androidx.compose.material.icons.outlined.Folder
 import androidx.compose.material.icons.outlined.RotateRight
 import androidx.compose.material.icons.outlined.VideoLibrary
-import androidx.compose.material3.CircularWavyProgressIndicator
-import androidx.compose.material3.ExperimentalMaterial3ExpressiveApi
-import androidx.compose.material3.FilledTonalButton
+import androidx.compose.material3.Card
+import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.ProgressIndicatorDefaults
-import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.getValue
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
-import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.platform.testTag
@@ -59,18 +52,19 @@ import com.example.data.ProcessedVideoEntity
 import com.example.model.MultiPartCutMode
 import com.example.model.VideoItem
 import com.example.ui.NavigationTab
-import com.example.ui.theme.AppMonoFontFamily
+import com.example.ui.theme.SurfaceBorderLight
+import com.example.ui.theme.TextPrimaryDark
+import com.example.ui.theme.TextSecondaryMuted
 import com.example.util.VideoProcessor
 
 private val wittyGreetings = listOf(
-    "Welcome, Master" to "Craft sharp cuts & studio exports.",
-    "Ready for Magic?" to "Choose a studio tool to begin.",
-    "Studio Command Ready" to "Precision trimming, merging & CRF compression.",
-    "Ready to Slice & Dice?" to "Fast lossless cuts or high-efficiency transcodes.",
-    "Your Studio Engine" to "Engineered for clean exports & real storage savings."
+    "Welcome, Master" to "What masterpiece are we cutting today?",
+    "Ready for Magic?" to "Select a studio tool below to begin.",
+    "Time to Edit!" to "Fast trimming, merging, rotation & compression.",
+    "Ready to Slice & Dice?" to "Lossless cuts or crisp x264/x265 transcodes.",
+    "Studio Engine Ready" to "Pick a tool or browse your device videos."
 )
 
-@OptIn(ExperimentalMaterial3ExpressiveApi::class)
 @Composable
 fun OverviewScreen(
     selectedVideo: VideoItem?,
@@ -85,50 +79,30 @@ fun OverviewScreen(
     val greetingIndex = rememberSaveable { (0 until wittyGreetings.size).random() }
     val greeting = wittyGreetings[greetingIndex]
 
-    val totalOrig = history.sumOf { it.originalSizeBytes.coerceAtLeast(0L) }
-    val totalOut = history.sumOf { it.outputSizeBytes.coerceAtLeast(0L) }
-    val overallSaveRatio = if (totalOrig > 0L) {
-        ((totalOrig - totalOut).toFloat() / totalOrig.toFloat()).coerceIn(0f, 1f)
-    } else 0f
-    val animatedSaveRatio by animateFloatAsState(
-        targetValue = if (history.isEmpty()) 0.18f else overallSaveRatio.coerceAtLeast(0.08f),
-        animationSpec = ProgressIndicatorDefaults.ProgressAnimationSpec,
-        label = "overview_hero_ratio"
-    )
-    val savedPercentText = if (totalOrig > 0L) "${(overallSaveRatio * 100).toInt().coerceIn(0, 99)}%" else "0%"
-
     val primary = MaterialTheme.colorScheme.primary
     val primaryContainer = MaterialTheme.colorScheme.primaryContainer
-    val onPrimaryContainer = MaterialTheme.colorScheme.onPrimaryContainer
     val secondary = MaterialTheme.colorScheme.secondary
     val secondaryContainer = MaterialTheme.colorScheme.secondaryContainer
-    val onSecondaryContainer = MaterialTheme.colorScheme.onSecondaryContainer
 
     val buttons = listOf(
         ArsenalButtonItem(
             testTag = "tool_card_single_cut",
             title = "Cut Video",
-            description = "Frame-accurate or stream trim",
+            description = "Frame-accurate trim",
             icon = Icons.Outlined.ContentCut,
             badge = "SINGLE",
             iconBg = primaryContainer,
             iconTint = primary,
-            badgeBg = primaryContainer,
-            badgeText = onPrimaryContainer,
-            cornerShape = RoundedCornerShape(topStart = 28.dp, topEnd = 16.dp, bottomStart = 16.dp, bottomEnd = 28.dp),
             onClick = { onOpenPickerForTool(NavigationTab.SINGLE_CUT) }
         ),
         ArsenalButtonItem(
             testTag = "tool_card_remove_parts",
             title = "Remove Parts",
-            description = "Cut out unwanted segments",
+            description = "Cut out unwanted clips",
             icon = Icons.Default.FolderOpen,
             badge = "MULTI",
             iconBg = secondaryContainer,
             iconTint = secondary,
-            badgeBg = secondaryContainer,
-            badgeText = onSecondaryContainer,
-            cornerShape = RoundedCornerShape(topStart = 16.dp, topEnd = 28.dp, bottomStart = 28.dp, bottomEnd = 16.dp),
             onClick = {
                 onSetMultiPartMode?.invoke(MultiPartCutMode.REMOVE_SELECTED)
                 onOpenPickerForTool(NavigationTab.MULTI_CUT)
@@ -137,14 +111,11 @@ fun OverviewScreen(
         ArsenalButtonItem(
             testTag = "tool_card_keep_parts",
             title = "Keep Parts",
-            description = "Merge selected highlights",
+            description = "Keep selected parts",
             icon = Icons.Filled.FolderSpecial,
             badge = "MULTI",
             iconBg = primaryContainer,
             iconTint = primary,
-            badgeBg = primaryContainer,
-            badgeText = onPrimaryContainer,
-            cornerShape = RoundedCornerShape(24.dp),
             onClick = {
                 onSetMultiPartMode?.invoke(MultiPartCutMode.KEEP_SELECTED)
                 onOpenPickerForTool(NavigationTab.MULTI_CUT)
@@ -153,215 +124,182 @@ fun OverviewScreen(
         ArsenalButtonItem(
             testTag = "tool_card_compressor",
             title = "Compressor",
-            description = "CRF x264, H.265 & Target MB",
+            description = "CRF x264, H.265 & Target",
             icon = Icons.Outlined.Compress,
-            badge = "CRF ENGINE",
+            badge = "COMPRESS",
             iconBg = secondaryContainer,
             iconTint = secondary,
-            badgeBg = secondaryContainer,
-            badgeText = onSecondaryContainer,
-            cornerShape = RoundedCornerShape(24.dp),
             onClick = { onOpenPickerForTool(NavigationTab.COMPRESSOR) }
         ),
         ArsenalButtonItem(
             testTag = "tool_card_join",
             title = "Join Video",
-            description = "Merge clips cleanly",
+            description = "Merge multiple videos",
             icon = Icons.Default.CallMerge,
             badge = "MERGE",
             iconBg = primaryContainer,
             iconTint = primary,
-            badgeBg = primaryContainer,
-            badgeText = onPrimaryContainer,
-            cornerShape = RoundedCornerShape(topStart = 16.dp, topEnd = 28.dp, bottomStart = 28.dp, bottomEnd = 16.dp),
             onClick = { onOpenPickerForTool(NavigationTab.JOIN_VIDEO) }
         ),
         ArsenalButtonItem(
             testTag = "tool_card_rotate",
             title = "Rotate Video",
-            description = "Rotate, flip & timeline parts",
+            description = "Rotate, flip & segments",
             icon = Icons.Outlined.RotateRight,
-            badge = "TRANSFORM",
+            badge = "ROTATE",
             iconBg = secondaryContainer,
             iconTint = secondary,
-            badgeBg = secondaryContainer,
-            badgeText = onSecondaryContainer,
-            cornerShape = RoundedCornerShape(topStart = 28.dp, topEnd = 16.dp, bottomStart = 16.dp, bottomEnd = 28.dp),
             onClick = { onOpenPickerForTool(NavigationTab.ROTATE_VIDEO) }
         )
     )
 
-    Box(
+    LazyVerticalGrid(
+        columns = GridCells.Fixed(2),
         modifier = Modifier
             .fillMaxSize()
             .background(MaterialTheme.colorScheme.background),
-        contentAlignment = Alignment.TopCenter
+        contentPadding = PaddingValues(16.dp),
+        horizontalArrangement = Arrangement.spacedBy(12.dp),
+        verticalArrangement = Arrangement.spacedBy(12.dp)
     ) {
-        LazyVerticalGrid(
-            columns = GridCells.Adaptive(minSize = 158.dp),
-            modifier = Modifier
-                .widthIn(max = 720.dp)
-                .fillMaxSize(),
-            contentPadding = PaddingValues(horizontal = 16.dp, vertical = 14.dp),
-            horizontalArrangement = Arrangement.spacedBy(12.dp),
-            verticalArrangement = Arrangement.spacedBy(12.dp)
-        ) {
-            // Focal Visual Hero Card
-            item(span = { GridItemSpan(maxLineSpan) }) {
-                Surface(
-                    shape = RoundedCornerShape(32.dp),
-                    color = MaterialTheme.colorScheme.surfaceContainerLow,
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .animateContentSize()
-                ) {
-                    Box(
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .background(
-                                Brush.linearGradient(
-                                    colors = listOf(
-                                        primaryContainer.copy(alpha = 0.72f),
-                                        secondaryContainer.copy(alpha = 0.45f)
-                                    )
-                                )
-                            )
-                            .padding(22.dp)
-                    ) {
-                        Column(modifier = Modifier.fillMaxWidth()) {
-                            Row(
-                                modifier = Modifier.fillMaxWidth(),
-                                verticalAlignment = Alignment.CenterVertically,
-                                horizontalArrangement = Arrangement.SpaceBetween
-                            ) {
-                                Column(modifier = Modifier.weight(1f)) {
-                                    Text(
-                                        text = greeting.first,
-                                        style = MaterialTheme.typography.labelLarge,
-                                        color = primary,
-                                        maxLines = 1,
-                                        overflow = TextOverflow.Ellipsis
-                                    )
-                                    Spacer(modifier = Modifier.height(4.dp))
-                                    Text(
-                                        text = VideoProcessor.formatFileSize(totalBytesSaved.coerceAtLeast(0L)),
-                                        style = MaterialTheme.typography.displayMedium.copy(fontFamily = AppMonoFontFamily),
-                                        fontWeight = FontWeight.ExtraBold,
-                                        color = MaterialTheme.colorScheme.onSurface,
-                                        modifier = Modifier.testTag("overview_hero_saved_bytes")
-                                    )
-                                    Text(
-                                        text = "Total storage reclaimed • $savedPercentText efficiency",
-                                        style = MaterialTheme.typography.bodyMedium,
-                                        color = MaterialTheme.colorScheme.onSurfaceVariant
-                                    )
-                                }
+        // Greeting Banner Card
+        item(span = { GridItemSpan(2) }) {
+            Card(
+                modifier = Modifier.fillMaxWidth(),
+                colors = CardDefaults.cardColors(containerColor = Color.White),
+                border = BorderStroke(1.dp, SurfaceBorderLight),
+                shape = RoundedCornerShape(16.dp)
+            ) {
+                Column(modifier = Modifier.padding(16.dp)) {
+                    Text(
+                        text = greeting.first,
+                        fontWeight = FontWeight.ExtraBold,
+                        fontSize = 20.sp,
+                        color = TextPrimaryDark
+                    )
+                    Spacer(modifier = Modifier.height(4.dp))
+                    Text(
+                        text = greeting.second,
+                        fontSize = 13.sp,
+                        color = TextSecondaryMuted
+                    )
 
-                                Spacer(modifier = Modifier.width(12.dp))
-
-                                Box(
-                                    modifier = Modifier.size(84.dp),
-                                    contentAlignment = Alignment.Center
-                                ) {
-                                    CircularWavyProgressIndicator(
-                                        progress = { animatedSaveRatio },
-                                        modifier = Modifier.fillMaxSize(),
-                                        color = primary,
-                                        trackColor = MaterialTheme.colorScheme.surface.copy(alpha = 0.65f)
-                                    )
-                                    Text(
-                                        text = if (history.isEmpty()) "0" else "${history.size}",
-                                        style = MaterialTheme.typography.titleLarge.copy(fontFamily = AppMonoFontFamily),
-                                        fontWeight = FontWeight.ExtraBold,
-                                        color = primary
-                                    )
-                                }
-                            }
-
-                            Spacer(modifier = Modifier.height(14.dp))
-
+                    if (history.isNotEmpty() || totalBytesSaved > 0L) {
+                        Spacer(modifier = Modifier.height(10.dp))
+                        Box(
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .clip(RoundedCornerShape(10.dp))
+                                .background(primaryContainer.copy(alpha = 0.65f))
+                                .padding(horizontal = 12.dp, vertical = 8.dp)
+                        ) {
                             Text(
-                                text = greeting.second,
-                                style = MaterialTheme.typography.bodySmall,
-                                color = MaterialTheme.colorScheme.onSurfaceVariant
+                                text = "${history.size} Saved Exports • ${VideoProcessor.formatFileSize(totalBytesSaved.coerceAtLeast(0L))} saved",
+                                fontSize = 12.sp,
+                                fontWeight = FontWeight.Bold,
+                                color = primary
                             )
-
-                            Spacer(modifier = Modifier.height(14.dp))
-
-                            Row(
-                                modifier = Modifier.fillMaxWidth(),
-                                horizontalArrangement = Arrangement.spacedBy(10.dp)
-                            ) {
-                                FilledTonalButton(
-                                    onClick = { onNavigateTab(NavigationTab.MEDIA_SELECTOR) },
-                                    modifier = Modifier
-                                        .weight(1f)
-                                        .height(48.dp)
-                                        .testTag("overview_media_browser_btn"),
-                                    shape = RoundedCornerShape(16.dp)
-                                ) {
-                                    Icon(
-                                        imageVector = Icons.Outlined.Folder,
-                                        contentDescription = null,
-                                        modifier = Modifier.size(18.dp)
-                                    )
-                                    Spacer(modifier = Modifier.width(6.dp))
-                                    Text("Browse Media", maxLines = 1, overflow = TextOverflow.Ellipsis)
-                                }
-
-                                FilledTonalButton(
-                                    onClick = { onNavigateTab(NavigationTab.HISTORY) },
-                                    modifier = Modifier
-                                        .weight(1f)
-                                        .height(48.dp)
-                                        .testTag("overview_saved_library_btn"),
-                                    shape = RoundedCornerShape(16.dp)
-                                ) {
-                                    Icon(
-                                        imageVector = Icons.Outlined.VideoLibrary,
-                                        contentDescription = null,
-                                        modifier = Modifier.size(18.dp)
-                                    )
-                                    Spacer(modifier = Modifier.width(6.dp))
-                                    Text("Exports (${history.size})", maxLines = 1, overflow = TextOverflow.Ellipsis)
-                                }
-                            }
                         }
                     }
-                }
-            }
 
-            // Section Header
-            item(span = { GridItemSpan(maxLineSpan) }) {
-                Row(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .padding(top = 6.dp, bottom = 2.dp, start = 4.dp, end = 4.dp),
-                    horizontalArrangement = Arrangement.SpaceBetween,
-                    verticalAlignment = Alignment.CenterVertically
-                ) {
-                    Text(
-                        text = "Studio Tools",
-                        style = MaterialTheme.typography.titleLarge,
-                        color = MaterialTheme.colorScheme.onBackground
-                    )
                     if (selectedVideo != null) {
+                        Spacer(modifier = Modifier.height(8.dp))
                         Text(
-                            text = "Active: ${selectedVideo.title}",
-                            style = MaterialTheme.typography.labelMedium,
+                            text = "Loaded: ${selectedVideo.title}",
+                            fontSize = 11.sp,
+                            fontWeight = FontWeight.SemiBold,
                             color = primary,
                             maxLines = 1,
-                            overflow = TextOverflow.Ellipsis,
-                            modifier = Modifier.widthIn(max = 180.dp)
+                            overflow = TextOverflow.Ellipsis
                         )
                     }
                 }
             }
+        }
 
-            // Expressive Soft-Tonal Tool Grid
-            items(buttons.size) { index ->
-                ArsenalCard(item = buttons[index])
+        // Quick Library Buttons
+        item {
+            Card(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .clickable { onNavigateTab(NavigationTab.MEDIA_SELECTOR) }
+                    .testTag("overview_media_browser_btn"),
+                colors = CardDefaults.cardColors(containerColor = Color.White),
+                border = BorderStroke(1.dp, SurfaceBorderLight),
+                shape = RoundedCornerShape(14.dp)
+            ) {
+                Row(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(14.dp),
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    Icon(
+                        imageVector = Icons.Outlined.Folder,
+                        contentDescription = "Media Browser",
+                        tint = primary,
+                        modifier = Modifier.size(20.dp)
+                    )
+                    Spacer(modifier = Modifier.width(8.dp))
+                    Text(
+                        text = "Media Browser",
+                        fontWeight = FontWeight.Bold,
+                        fontSize = 13.sp,
+                        color = TextPrimaryDark,
+                        maxLines = 1,
+                        overflow = TextOverflow.Ellipsis
+                    )
+                }
             }
+        }
+
+        item {
+            Card(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .clickable { onNavigateTab(NavigationTab.HISTORY) }
+                    .testTag("overview_saved_library_btn"),
+                colors = CardDefaults.cardColors(containerColor = Color.White),
+                border = BorderStroke(1.dp, SurfaceBorderLight),
+                shape = RoundedCornerShape(14.dp)
+            ) {
+                Row(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(14.dp),
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    Icon(
+                        imageVector = Icons.Outlined.VideoLibrary,
+                        contentDescription = "Saved Videos",
+                        tint = primary,
+                        modifier = Modifier.size(20.dp)
+                    )
+                    Spacer(modifier = Modifier.width(8.dp))
+                    Text(
+                        text = "Saved (${history.size})",
+                        fontWeight = FontWeight.Bold,
+                        fontSize = 13.sp,
+                        color = TextPrimaryDark,
+                        maxLines = 1,
+                        overflow = TextOverflow.Ellipsis
+                    )
+                }
+            }
+        }
+
+        item(span = { GridItemSpan(2) }) {
+            Text(
+                text = "Studio Tools",
+                fontWeight = FontWeight.Bold,
+                fontSize = 16.sp,
+                color = TextPrimaryDark,
+                modifier = Modifier.padding(top = 4.dp)
+            )
+        }
+
+        items(buttons.size) { index ->
+            ArsenalCard(item = buttons[index])
         }
     }
 }
@@ -374,28 +312,25 @@ private data class ArsenalButtonItem(
     val badge: String,
     val iconBg: Color,
     val iconTint: Color,
-    val badgeBg: Color,
-    val badgeText: Color,
-    val cornerShape: RoundedCornerShape,
     val onClick: () -> Unit
 )
 
 @Composable
 private fun ArsenalCard(item: ArsenalButtonItem) {
-    Surface(
+    Card(
         modifier = Modifier
             .fillMaxWidth()
-            .height(152.dp)
-            .clip(item.cornerShape)
+            .height(142.dp)
             .clickable(onClick = item.onClick)
             .testTag(item.testTag),
-        color = MaterialTheme.colorScheme.surfaceContainerLow,
-        shape = item.cornerShape
+        colors = CardDefaults.cardColors(containerColor = Color.White),
+        border = BorderStroke(1.dp, SurfaceBorderLight),
+        shape = RoundedCornerShape(16.dp)
     ) {
         Column(
             modifier = Modifier
                 .fillMaxSize()
-                .padding(16.dp),
+                .padding(14.dp),
             verticalArrangement = Arrangement.SpaceBetween
         ) {
             Row(
@@ -405,8 +340,8 @@ private fun ArsenalCard(item: ArsenalButtonItem) {
             ) {
                 Box(
                     modifier = Modifier
-                        .size(44.dp)
-                        .clip(RoundedCornerShape(14.dp))
+                        .size(40.dp)
+                        .clip(RoundedCornerShape(10.dp))
                         .background(item.iconBg),
                     contentAlignment = Alignment.Center
                 ) {
@@ -420,16 +355,15 @@ private fun ArsenalCard(item: ArsenalButtonItem) {
 
                 Box(
                     modifier = Modifier
-                        .clip(RoundedCornerShape(50))
-                        .background(item.badgeBg)
-                        .padding(horizontal = 9.dp, vertical = 4.dp)
+                        .clip(RoundedCornerShape(6.dp))
+                        .background(item.iconBg)
+                        .padding(horizontal = 7.dp, vertical = 3.dp)
                 ) {
                     Text(
                         text = item.badge,
-                        style = MaterialTheme.typography.labelSmall,
-                        fontWeight = FontWeight.ExtraBold,
-                        color = item.badgeText,
-                        letterSpacing = 0.4.sp
+                        fontSize = 9.sp,
+                        fontWeight = FontWeight.Bold,
+                        color = item.iconTint
                     )
                 }
             }
@@ -442,35 +376,33 @@ private fun ArsenalCard(item: ArsenalButtonItem) {
                 Column(modifier = Modifier.weight(1f)) {
                     Text(
                         text = item.title,
-                        style = MaterialTheme.typography.titleMedium,
-                        color = MaterialTheme.colorScheme.onSurface,
+                        fontWeight = FontWeight.Bold,
+                        fontSize = 15.sp,
+                        color = TextPrimaryDark,
                         maxLines = 1,
                         overflow = TextOverflow.Ellipsis
                     )
-                    Spacer(modifier = Modifier.height(2.dp))
                     Text(
                         text = item.description,
-                        style = MaterialTheme.typography.bodySmall,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                        fontSize = 11.sp,
+                        color = TextSecondaryMuted,
                         maxLines = 2,
                         overflow = TextOverflow.Ellipsis
                     )
                 }
 
-                Spacer(modifier = Modifier.width(6.dp))
-
                 Box(
                     modifier = Modifier
-                        .size(30.dp)
+                        .size(26.dp)
                         .clip(CircleShape)
-                        .background(MaterialTheme.colorScheme.surfaceContainerHigh),
+                        .background(Color(0xFFF1F5F9)),
                     contentAlignment = Alignment.Center
                 ) {
                     Icon(
                         imageVector = Icons.AutoMirrored.Filled.KeyboardArrowRight,
-                        contentDescription = "Open ${item.title}",
-                        tint = MaterialTheme.colorScheme.primary,
-                        modifier = Modifier.size(18.dp)
+                        contentDescription = null,
+                        tint = item.iconTint,
+                        modifier = Modifier.size(16.dp)
                     )
                 }
             }

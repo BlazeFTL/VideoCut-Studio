@@ -45,10 +45,9 @@ import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
-import androidx.compose.material3.ExperimentalMaterial3ExpressiveApi
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
-import androidx.compose.material3.LinearWavyProgressIndicator
+import androidx.compose.material3.LinearProgressIndicator
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.OutlinedTextField
@@ -80,8 +79,10 @@ import com.example.util.VideoProcessor
 
 import com.example.ui.components.FullscreenProcessingDialog
 import com.example.ui.components.VideoPlayerView
+import com.example.ui.theme.SurfaceBorderLight
+import com.example.ui.theme.TextPrimaryDark
+import com.example.ui.theme.TextSecondaryMuted
 
-@OptIn(ExperimentalMaterial3ExpressiveApi::class)
 @Composable
 fun SingleCutScreen(
     selectedVideo: VideoItem?,
@@ -153,7 +154,7 @@ fun SingleCutScreen(
                     Icon(
                         imageVector = Icons.AutoMirrored.Filled.ArrowBack,
                         contentDescription = "Back / Select Video",
-                        tint = MaterialTheme.colorScheme.onBackground
+                        tint = TextPrimaryDark
                     )
                 }
 
@@ -162,16 +163,16 @@ fun SingleCutScreen(
                 Icon(
                     imageVector = Icons.Default.ContentCut,
                     contentDescription = "Crop",
-                    tint = MaterialTheme.colorScheme.onBackground,
+                    tint = TextPrimaryDark,
                     modifier = Modifier.size(20.dp)
                 )
 
                 Spacer(modifier = Modifier.width(10.dp))
 
                 Surface(
-                    color = MaterialTheme.colorScheme.surfaceContainerLow,
+                    color = Color.White,
                     shape = RoundedCornerShape(10.dp),
-                    border = BorderStroke(1.dp, MaterialTheme.colorScheme.outlineVariant)
+                    border = BorderStroke(1.dp, SurfaceBorderLight)
                 ) {
                     Row(
                         modifier = Modifier.padding(horizontal = 10.dp, vertical = 6.dp),
@@ -181,10 +182,10 @@ fun SingleCutScreen(
                             text = selectedVideo?.title?.substringAfterLast('.')?.uppercase() ?: "MP4",
                             fontWeight = FontWeight.Bold,
                             fontSize = 13.sp,
-                            color = MaterialTheme.colorScheme.onSurface
+                            color = TextPrimaryDark
                         )
                         Spacer(modifier = Modifier.width(4.dp))
-                        Text("▾", fontSize = 11.sp, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                        Text("▾", fontSize = 11.sp, color = TextSecondaryMuted)
                     }
                 }
             }
@@ -262,9 +263,9 @@ fun SingleCutScreen(
         // Unified Stepper Controls & Video Frame Timeline Strip Below Video Container
         Card(
             modifier = Modifier.fillMaxWidth(),
-            colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceContainerLow),
-            border = BorderStroke(1.dp, MaterialTheme.colorScheme.outlineVariant),
-            shape = RoundedCornerShape(18.dp)
+            colors = CardDefaults.cardColors(containerColor = Color.White),
+            border = BorderStroke(1.dp, SurfaceBorderLight),
+            shape = RoundedCornerShape(16.dp)
         ) {
                 Column(modifier = Modifier.padding(12.dp)) {
                     Row(
@@ -292,7 +293,7 @@ fun SingleCutScreen(
                                 text = VideoProcessor.formatDurationPrecise(startMs),
                                 fontSize = 11.sp,
                                 fontWeight = FontWeight.Bold,
-                                color = MaterialTheme.colorScheme.onSurface,
+                                color = TextPrimaryDark,
                                 modifier = Modifier.clickable { showStartPicker = true }
                             )
                             Spacer(modifier = Modifier.width(6.dp))
@@ -319,7 +320,7 @@ fun SingleCutScreen(
                                 text = VideoProcessor.formatDurationPrecise(cutDurationMs),
                                 fontSize = 11.sp,
                                 fontWeight = FontWeight.ExtraBold,
-                                color = MaterialTheme.colorScheme.onSurface
+                                color = TextPrimaryDark
                             )
                         }
 
@@ -343,7 +344,7 @@ fun SingleCutScreen(
                                 text = VideoProcessor.formatDurationPrecise(endMs),
                                 fontSize = 11.sp,
                                 fontWeight = FontWeight.Bold,
-                                color = MaterialTheme.colorScheme.onSurface,
+                                color = TextPrimaryDark,
                                 modifier = Modifier.clickable { showEndPicker = true }
                             )
                             Spacer(modifier = Modifier.width(6.dp))
@@ -502,9 +503,12 @@ fun SingleCutScreen(
                         color = MaterialTheme.colorScheme.primary
                     )
                 }
-                LinearWavyProgressIndicator(
+                LinearProgressIndicator(
                     progress = { processingProgress.coerceIn(0f, 1f) },
-                    modifier = Modifier.fillMaxWidth(),
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .height(6.dp)
+                        .clip(RoundedCornerShape(3.dp)),
                     color = MaterialTheme.colorScheme.primary,
                     trackColor = MaterialTheme.colorScheme.primaryContainer
                 )
@@ -556,8 +560,8 @@ private fun TimeStepperBox(
         modifier = modifier
             .height(56.dp)
             .clip(RoundedCornerShape(10.dp)),
-        color = MaterialTheme.colorScheme.surfaceContainerLow,
-        border = BorderStroke(1.dp, MaterialTheme.colorScheme.outlineVariant)
+        color = Color.White,
+        border = BorderStroke(1.dp, SurfaceBorderLight)
     ) {
         Row(
             modifier = Modifier.fillMaxSize(),
@@ -571,7 +575,7 @@ private fun TimeStepperBox(
                     .clickable(onClick = onMinus),
                 contentAlignment = Alignment.Center
             ) {
-                Icon(Icons.Default.Remove, contentDescription = "Decrease", tint = MaterialTheme.colorScheme.onPrimary, modifier = Modifier.size(16.dp))
+                Icon(Icons.Default.Remove, contentDescription = "Decrease", tint = Color.White, modifier = Modifier.size(16.dp))
             }
 
             Box(
@@ -582,8 +586,8 @@ private fun TimeStepperBox(
                 contentAlignment = Alignment.Center
             ) {
                 Column(horizontalAlignment = Alignment.CenterHorizontally) {
-                    Text(title, fontSize = 8.sp, fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.onSurfaceVariant)
-                    Text(timeString, fontSize = 11.sp, fontWeight = FontWeight.ExtraBold, color = MaterialTheme.colorScheme.onSurface)
+                    Text(title, fontSize = 8.sp, fontWeight = FontWeight.Bold, color = TextSecondaryMuted)
+                    Text(timeString, fontSize = 11.sp, fontWeight = FontWeight.ExtraBold, color = TextPrimaryDark)
                 }
             }
 
@@ -623,7 +627,7 @@ private fun PreciseTimePickerDialog(
         title = { Text(title, fontWeight = FontWeight.Bold, fontSize = 16.sp) },
         text = {
             Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
-                Text("Enter exact timestamp:", fontSize = 13.sp, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                Text("Enter exact timestamp:", fontSize = 13.sp, color = TextSecondaryMuted)
 
                 Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
                     OutlinedTextField(

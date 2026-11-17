@@ -80,7 +80,7 @@ fun TopDashboardBar(
         modifier = modifier
             .fillMaxWidth()
             .statusBarsPadding(),
-        color = MaterialTheme.colorScheme.surface,
+        color = Color.White,
         shadowElevation = 0.dp
     ) {
         Row(

@@ -21,22 +21,6 @@ val TextPrimaryDark = Color(0xFF0F172A)
 val TextSecondaryMuted = Color(0xFF475569)
 val TextSubtlePlaceholder = Color(0xFF94A3B8)
 
-// Dark Theme Palette
-val DarkBackground = Color(0xFF0E1016)
-val DarkSurface = Color(0xFF151822)
-val DarkSurfaceContainer = Color(0xFF1C202E)
-val DarkSurfaceContainerHigh = Color(0xFF252A3B)
-val DarkOutline = Color(0xFF2E3548)
-val DarkTextPrimary = Color(0xFFF1F5F9)
-val DarkTextMuted = Color(0xFF94A3B8)
-
-// AMOLED Pitch-Black Palette
-val AmoledBackground = Color(0xFF000000)
-val AmoledSurface = Color(0xFF090A0F)
-val AmoledSurfaceContainer = Color(0xFF12141E)
-val AmoledSurfaceContainerHigh = Color(0xFF1A1D2B)
-val AmoledOutline = Color(0xFF242938)
-
 // Semantic Status Accents
 val EmeraldSuccess = Color(0xFF10B981)
 val EmeraldContainer = Color(0xFFD1FAE5)

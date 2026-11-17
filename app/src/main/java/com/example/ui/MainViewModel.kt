@@ -8,7 +8,6 @@ import androidx.lifecycle.viewModelScope
 import com.example.data.AppDatabase
 import com.example.data.ProcessedVideoEntity
 import com.example.model.AppTheme
-import com.example.model.ThemeBrightnessMode
 import com.example.model.CompressionMethod
 import com.example.model.CompressionPreset
 import com.example.model.CompressionSettings
@@ -214,16 +213,6 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
     )
     val currentTheme: StateFlow<AppTheme> = _currentTheme.asStateFlow()
 
-    private val _brightnessMode = MutableStateFlow(
-        ThemeBrightnessMode.fromId(prefs.getString("brightness_mode", ThemeBrightnessMode.SYSTEM.id) ?: ThemeBrightnessMode.SYSTEM.id)
-    )
-    val brightnessMode: StateFlow<ThemeBrightnessMode> = _brightnessMode.asStateFlow()
-
-    private val _useDynamicColor = MutableStateFlow(
-        prefs.getBoolean("use_dynamic_color", false)
-    )
-    val useDynamicColor: StateFlow<Boolean> = _useDynamicColor.asStateFlow()
-
     private val _enableForegroundService = MutableStateFlow(
         prefs.getBoolean("enable_fg_service", true)
     )
@@ -237,16 +226,6 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
     fun setAppTheme(theme: AppTheme) {
         _currentTheme.value = theme
         prefs.edit().putString("selected_theme", theme.id).apply()
-    }
-
-    fun setBrightnessMode(mode: ThemeBrightnessMode) {
-        _brightnessMode.value = mode
-        prefs.edit().putString("brightness_mode", mode.id).apply()
-    }
-
-    fun setUseDynamicColor(enabled: Boolean) {
-        _useDynamicColor.value = enabled
-        prefs.edit().putBoolean("use_dynamic_color", enabled).apply()
     }
 
     fun emitUserMessage(message: String) {

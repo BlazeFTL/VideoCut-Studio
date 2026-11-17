@@ -1,7 +1,6 @@
 package com.example.ui.components
 
 import androidx.compose.foundation.background
-import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -13,6 +12,7 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.statusBarsPadding
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
@@ -33,7 +33,6 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
-import androidx.compose.foundation.layout.statusBarsPadding
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
@@ -43,6 +42,9 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.example.ui.NavigationTab
+import com.example.ui.theme.SurfaceBorderLight
+import com.example.ui.theme.TextPrimaryDark
+import com.example.ui.theme.TextSecondaryMuted
 
 @Composable
 fun NavigationDrawerContent(
@@ -55,7 +57,7 @@ fun NavigationDrawerContent(
         modifier = modifier
             .width(280.dp)
             .fillMaxHeight(),
-        color = MaterialTheme.colorScheme.surface,
+        color = Color.White,
         shadowElevation = 8.dp
     ) {
         Column(
@@ -64,7 +66,6 @@ fun NavigationDrawerContent(
                 .statusBarsPadding()
                 .padding(vertical = 16.dp, horizontal = 16.dp)
         ) {
-            // Header: Brand & Close Button
             Row(
                 modifier = Modifier
                     .fillMaxWidth()
@@ -86,7 +87,7 @@ fun NavigationDrawerContent(
                         text = "VideoCut Studio",
                         fontWeight = FontWeight.Bold,
                         fontSize = 20.sp,
-                        color = MaterialTheme.colorScheme.onSurface
+                        color = TextPrimaryDark
                     )
                 }
 
@@ -94,12 +95,12 @@ fun NavigationDrawerContent(
                     Icon(
                         imageVector = Icons.Default.Close,
                         contentDescription = "Close Menu",
-                        tint = MaterialTheme.colorScheme.onSurfaceVariant
+                        tint = TextSecondaryMuted
                     )
                 }
             }
 
-            HorizontalDivider(color = MaterialTheme.colorScheme.outline, thickness = 1.dp)
+            HorizontalDivider(color = SurfaceBorderLight, thickness = 1.dp)
 
             Spacer(modifier = Modifier.height(16.dp))
 
@@ -107,12 +108,11 @@ fun NavigationDrawerContent(
                 text = "NAVIGATION",
                 fontSize = 11.sp,
                 fontWeight = FontWeight.Bold,
-                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                color = TextSecondaryMuted,
                 letterSpacing = 1.sp,
                 modifier = Modifier.padding(horizontal = 8.dp, vertical = 6.dp)
             )
 
-            // Navigation Items
             DrawerMenuItem(
                 label = "Overview",
                 icon = Icons.Outlined.Dashboard,
@@ -155,7 +155,7 @@ fun NavigationDrawerContent(
 
             DrawerMenuItem(
                 label = "Join Video",
-                icon = androidx.compose.material.icons.Icons.Default.CallMerge,
+                icon = Icons.Default.CallMerge,
                 isSelected = activeTab == NavigationTab.JOIN_VIDEO,
                 onClick = {
                     onSelectTab(NavigationTab.JOIN_VIDEO)
@@ -165,7 +165,7 @@ fun NavigationDrawerContent(
 
             DrawerMenuItem(
                 label = "Rotate Video",
-                icon = androidx.compose.material.icons.Icons.Outlined.RotateRight,
+                icon = Icons.Outlined.RotateRight,
                 isSelected = activeTab == NavigationTab.ROTATE_VIDEO,
                 onClick = {
                     onSelectTab(NavigationTab.ROTATE_VIDEO)
@@ -175,7 +175,7 @@ fun NavigationDrawerContent(
 
             DrawerMenuItem(
                 label = "Media Selector",
-                icon = androidx.compose.material.icons.Icons.Outlined.Folder,
+                icon = Icons.Outlined.Folder,
                 isSelected = activeTab == NavigationTab.MEDIA_SELECTOR,
                 onClick = {
                     onSelectTab(NavigationTab.MEDIA_SELECTOR)
@@ -185,7 +185,7 @@ fun NavigationDrawerContent(
 
             Spacer(modifier = Modifier.height(16.dp))
 
-            HorizontalDivider(color = MaterialTheme.colorScheme.outline, thickness = 1.dp)
+            HorizontalDivider(color = SurfaceBorderLight, thickness = 1.dp)
 
             Spacer(modifier = Modifier.height(16.dp))
 
@@ -193,7 +193,7 @@ fun NavigationDrawerContent(
                 text = "LIBRARY",
                 fontSize = 11.sp,
                 fontWeight = FontWeight.Bold,
-                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                color = TextSecondaryMuted,
                 letterSpacing = 1.sp,
                 modifier = Modifier.padding(horizontal = 8.dp, vertical = 6.dp)
             )
@@ -210,7 +210,7 @@ fun NavigationDrawerContent(
 
             Spacer(modifier = Modifier.height(16.dp))
 
-            HorizontalDivider(color = MaterialTheme.colorScheme.outline, thickness = 1.dp)
+            HorizontalDivider(color = SurfaceBorderLight, thickness = 1.dp)
 
             Spacer(modifier = Modifier.height(16.dp))
 
@@ -218,7 +218,7 @@ fun NavigationDrawerContent(
                 text = "PREFERENCES",
                 fontSize = 11.sp,
                 fontWeight = FontWeight.Bold,
-                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                color = TextSecondaryMuted,
                 letterSpacing = 1.sp,
                 modifier = Modifier.padding(horizontal = 8.dp, vertical = 6.dp)
             )
@@ -235,7 +235,6 @@ fun NavigationDrawerContent(
 
             Spacer(modifier = Modifier.weight(1f))
 
-            // Footer info
             Box(
                 modifier = Modifier
                     .fillMaxWidth()
@@ -253,7 +252,7 @@ fun NavigationDrawerContent(
                     Text(
                         text = "Lossless cutting & hardware compression active",
                         fontSize = 11.sp,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                        color = TextSecondaryMuted,
                         modifier = Modifier.padding(top = 2.dp)
                     )
                 }
@@ -270,16 +269,16 @@ private fun DrawerMenuItem(
     onClick: () -> Unit
 ) {
     val backgroundColor = if (isSelected) MaterialTheme.colorScheme.primary else Color.Transparent
-    val contentColor = if (isSelected) MaterialTheme.colorScheme.onPrimary else MaterialTheme.colorScheme.onSurface
+    val contentColor = if (isSelected) Color.White else TextPrimaryDark
 
     Row(
         modifier = Modifier
             .fillMaxWidth()
             .padding(vertical = 3.dp)
-            .clip(RoundedCornerShape(14.dp))
+            .clip(RoundedCornerShape(10.dp))
             .background(backgroundColor)
             .clickable(onClick = onClick)
-            .padding(horizontal = 12.dp, vertical = 13.dp),
+            .padding(horizontal = 12.dp, vertical = 12.dp),
         verticalAlignment = Alignment.CenterVertically
     ) {
         Icon(

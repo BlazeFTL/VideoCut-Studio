@@ -82,6 +82,9 @@ import androidx.compose.ui.unit.sp
 import com.example.model.VideoItem
 import com.example.ui.JoinSortOption
 import com.example.ui.theme.EmeraldSuccess
+import com.example.ui.theme.SurfaceBorderLight
+import com.example.ui.theme.TextPrimaryDark
+import com.example.ui.theme.TextSecondaryMuted
 import com.example.util.VideoProcessor
 
 @Composable
@@ -132,12 +135,12 @@ fun JoinVideoScreen(
                     text = "Join Videos",
                     fontWeight = FontWeight.Bold,
                     fontSize = 22.sp,
-                    color = MaterialTheme.colorScheme.onBackground
+                    color = TextPrimaryDark
                 )
                 Text(
                     text = "Merge multiple videos seamlessly into one",
                     fontSize = 12.sp,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                    color = TextSecondaryMuted
                 )
             }
 
@@ -160,9 +163,9 @@ fun JoinVideoScreen(
                     .fillMaxWidth()
                     .weight(1f)
                     .clickable { onOpenCustomPicker() },
-                colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceContainerLow),
-                border = BorderStroke(1.dp, MaterialTheme.colorScheme.outlineVariant),
-                shape = RoundedCornerShape(22.dp)
+                colors = CardDefaults.cardColors(containerColor = Color.White),
+                border = BorderStroke(1.dp, SurfaceBorderLight),
+                shape = RoundedCornerShape(18.dp)
             ) {
                 Column(
                     modifier = Modifier.fillMaxSize(),
@@ -179,7 +182,7 @@ fun JoinVideoScreen(
                         Icon(
                             imageVector = Icons.Default.CallMerge,
                             contentDescription = null,
-                            tint = MaterialTheme.colorScheme.onPrimaryContainer,
+                            tint = MaterialTheme.colorScheme.primary,
                             modifier = Modifier.size(32.dp)
                         )
                     }
@@ -190,7 +193,7 @@ fun JoinVideoScreen(
                         text = "No Videos Selected",
                         fontWeight = FontWeight.Bold,
                         fontSize = 16.sp,
-                        color = MaterialTheme.colorScheme.onSurface
+                        color = TextPrimaryDark
                     )
 
                     Spacer(modifier = Modifier.height(4.dp))
@@ -198,16 +201,16 @@ fun JoinVideoScreen(
                     Text(
                         text = "Tap here or 'Add Videos' to pick 2 or more videos to merge",
                         fontSize = 12.sp,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant
+                        color = TextSecondaryMuted
                     )
                 }
             }
         } else {
             Card(
                 modifier = Modifier.fillMaxWidth(),
-                colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceContainerLow),
-                border = BorderStroke(1.dp, MaterialTheme.colorScheme.outlineVariant),
-                shape = RoundedCornerShape(16.dp)
+                colors = CardDefaults.cardColors(containerColor = Color.White),
+                border = BorderStroke(1.dp, SurfaceBorderLight),
+                shape = RoundedCornerShape(14.dp)
             ) {
                 Row(
                     modifier = Modifier
@@ -221,12 +224,12 @@ fun JoinVideoScreen(
                             text = "${videoList.size} Videos • ${VideoProcessor.formatDuration(totalDurationMs)}",
                             fontWeight = FontWeight.Bold,
                             fontSize = 13.sp,
-                            color = MaterialTheme.colorScheme.onSurface
+                            color = TextPrimaryDark
                         )
                         Text(
                             text = "Total Size: ${VideoProcessor.formatFileSize(totalSizeBytes)}",
                             fontSize = 11.sp,
-                            color = MaterialTheme.colorScheme.onSurfaceVariant
+                            color = TextSecondaryMuted
                         )
                     }
 
@@ -329,16 +332,16 @@ fun JoinVideoScreen(
                                 )
                             },
                         colors = CardDefaults.cardColors(
-                            containerColor = if (isCurrentDragging) MaterialTheme.colorScheme.primaryContainer else MaterialTheme.colorScheme.surfaceContainerLow
+                            containerColor = if (isCurrentDragging) MaterialTheme.colorScheme.primaryContainer else Color.White
                         ),
                         border = BorderStroke(
                             width = if (isCurrentDragging) 2.dp else 1.dp,
-                            color = if (isCurrentDragging) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.outlineVariant
+                            color = if (isCurrentDragging) MaterialTheme.colorScheme.primary else SurfaceBorderLight
                         ),
                         elevation = CardDefaults.cardElevation(
                             defaultElevation = if (isCurrentDragging) 10.dp else 0.dp
                         ),
-                        shape = RoundedCornerShape(16.dp)
+                        shape = RoundedCornerShape(14.dp)
                     ) {
                         Row(
                             modifier = Modifier
@@ -392,7 +395,7 @@ fun JoinVideoScreen(
                                 Icon(
                                     imageVector = Icons.Default.DragHandle,
                                     contentDescription = "Drag to reorder",
-                                    tint = if (isCurrentDragging) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurfaceVariant,
+                                    tint = if (isCurrentDragging) MaterialTheme.colorScheme.primary else TextSecondaryMuted,
                                     modifier = Modifier.size(24.dp)
                                 )
                             }
@@ -465,14 +468,14 @@ fun JoinVideoScreen(
                                     text = item.title,
                                     fontWeight = FontWeight.Bold,
                                     fontSize = 13.sp,
-                                    color = MaterialTheme.colorScheme.onSurface,
+                                    color = TextPrimaryDark,
                                     maxLines = 1
                                 )
                                 Spacer(modifier = Modifier.height(2.dp))
                                 Text(
                                     text = "${VideoProcessor.formatDuration(item.durationMs)} • ${item.width}x${item.height} • ${VideoProcessor.formatFileSize(item.sizeBytes)}",
                                     fontSize = 11.sp,
-                                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                                    color = TextSecondaryMuted
                                 )
 
                                 val hasItemTransform = item.rotationDegrees != 0 || item.flipHorizontal || item.flipVertical
@@ -516,7 +519,7 @@ fun JoinVideoScreen(
                                         onClick = { onMoveVideo(index, index - 1) },
                                         modifier = Modifier.size(24.dp)
                                     ) {
-                                        Icon(Icons.Default.ArrowUpward, contentDescription = "Move Up", tint = MaterialTheme.colorScheme.onSurfaceVariant, modifier = Modifier.size(16.dp))
+                                        Icon(Icons.Default.ArrowUpward, contentDescription = "Move Up", tint = TextSecondaryMuted, modifier = Modifier.size(16.dp))
                                     }
                                 }
 
@@ -525,7 +528,7 @@ fun JoinVideoScreen(
                                         onClick = { onMoveVideo(index, index + 1) },
                                         modifier = Modifier.size(24.dp)
                                     ) {
-                                        Icon(Icons.Default.ArrowDownward, contentDescription = "Move Down", tint = MaterialTheme.colorScheme.onSurfaceVariant, modifier = Modifier.size(16.dp))
+                                        Icon(Icons.Default.ArrowDownward, contentDescription = "Move Down", tint = TextSecondaryMuted, modifier = Modifier.size(16.dp))
                                     }
                                 }
                             }
@@ -634,9 +637,9 @@ fun JoinRotateVideoDialog(
             modifier = Modifier
                 .fillMaxWidth(0.92f)
                 .padding(16.dp),
-            colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
-            shape = RoundedCornerShape(24.dp),
-            border = BorderStroke(1.dp, MaterialTheme.colorScheme.outlineVariant)
+            colors = CardDefaults.cardColors(containerColor = Color.White),
+            shape = RoundedCornerShape(18.dp),
+            border = BorderStroke(1.dp, SurfaceBorderLight)
         ) {
             Column(
                 modifier = Modifier
@@ -655,18 +658,18 @@ fun JoinRotateVideoDialog(
                             text = "Rotate Video",
                             fontWeight = FontWeight.Bold,
                             fontSize = 18.sp,
-                            color = MaterialTheme.colorScheme.onSurface
+                            color = TextPrimaryDark
                         )
                         Text(
                             text = videoItem.title,
                             fontSize = 12.sp,
-                            color = MaterialTheme.colorScheme.onSurfaceVariant,
+                            color = TextSecondaryMuted,
                             maxLines = 1
                         )
                     }
 
                     IconButton(onClick = onDismiss, modifier = Modifier.size(32.dp)) {
-                        Icon(Icons.Default.Close, contentDescription = "Close", tint = MaterialTheme.colorScheme.onSurfaceVariant)
+                        Icon(Icons.Default.Close, contentDescription = "Close", tint = TextSecondaryMuted)
                     }
                 }
 
@@ -703,9 +706,9 @@ fun JoinRotateVideoDialog(
                 ) {
                     Surface(
                         onClick = { rotationDegrees = ((rotationDegrees - 90) % 360 + 360) % 360 },
-                        shape = RoundedCornerShape(14.dp),
-                        color = MaterialTheme.colorScheme.surfaceContainer,
-                        border = BorderStroke(1.dp, MaterialTheme.colorScheme.outlineVariant),
+                        shape = RoundedCornerShape(12.dp),
+                        color = Color(0xFFF1F5F9),
+                        border = BorderStroke(1.dp, SurfaceBorderLight),
                         modifier = Modifier.size(50.dp)
                     ) {
                         Box(contentAlignment = Alignment.Center) {
@@ -720,9 +723,9 @@ fun JoinRotateVideoDialog(
 
                     Surface(
                         onClick = { rotationDegrees = (rotationDegrees + 90) % 360 },
-                        shape = RoundedCornerShape(14.dp),
-                        color = MaterialTheme.colorScheme.surfaceContainer,
-                        border = BorderStroke(1.dp, MaterialTheme.colorScheme.outlineVariant),
+                        shape = RoundedCornerShape(12.dp),
+                        color = Color(0xFFF1F5F9),
+                        border = BorderStroke(1.dp, SurfaceBorderLight),
                         modifier = Modifier.size(50.dp)
                     ) {
                         Box(contentAlignment = Alignment.Center) {
@@ -737,16 +740,16 @@ fun JoinRotateVideoDialog(
 
                     Surface(
                         onClick = { flipHorizontal = !flipHorizontal },
-                        shape = RoundedCornerShape(14.dp),
-                        color = if (flipHorizontal) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.surfaceContainer,
-                        border = BorderStroke(1.dp, if (flipHorizontal) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.outlineVariant),
+                        shape = RoundedCornerShape(12.dp),
+                        color = if (flipHorizontal) MaterialTheme.colorScheme.primary else Color(0xFFF1F5F9),
+                        border = BorderStroke(1.dp, if (flipHorizontal) MaterialTheme.colorScheme.primary else SurfaceBorderLight),
                         modifier = Modifier.size(50.dp)
                     ) {
                         Box(contentAlignment = Alignment.Center) {
                             Icon(
                                 imageVector = Icons.Default.SwapHoriz,
                                 contentDescription = "Flip Horizontal",
-                                tint = if (flipHorizontal) MaterialTheme.colorScheme.onPrimary else MaterialTheme.colorScheme.primary,
+                                tint = if (flipHorizontal) Color.White else MaterialTheme.colorScheme.primary,
                                 modifier = Modifier.size(24.dp)
                             )
                         }
@@ -754,16 +757,16 @@ fun JoinRotateVideoDialog(
 
                     Surface(
                         onClick = { flipVertical = !flipVertical },
-                        shape = RoundedCornerShape(14.dp),
-                        color = if (flipVertical) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.surfaceContainer,
-                        border = BorderStroke(1.dp, if (flipVertical) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.outlineVariant),
+                        shape = RoundedCornerShape(12.dp),
+                        color = if (flipVertical) MaterialTheme.colorScheme.primary else Color(0xFFF1F5F9),
+                        border = BorderStroke(1.dp, if (flipVertical) MaterialTheme.colorScheme.primary else SurfaceBorderLight),
                         modifier = Modifier.size(50.dp)
                     ) {
                         Box(contentAlignment = Alignment.Center) {
                             Icon(
                                 imageVector = Icons.Default.SwapVert,
                                 contentDescription = "Flip Vertical",
-                                tint = if (flipVertical) MaterialTheme.colorScheme.onPrimary else MaterialTheme.colorScheme.primary,
+                                tint = if (flipVertical) Color.White else MaterialTheme.colorScheme.primary,
                                 modifier = Modifier.size(24.dp)
                             )
                         }

@@ -114,8 +114,6 @@ fun MainDashboardScreen(
     val pickerTabIndex by viewModel.pickerTabIndex.collectAsStateWithLifecycle()
 
     val currentTheme by viewModel.currentTheme.collectAsStateWithLifecycle()
-    val brightnessMode by viewModel.brightnessMode.collectAsStateWithLifecycle()
-    val useDynamicColor by viewModel.useDynamicColor.collectAsStateWithLifecycle()
     val enableForegroundService by viewModel.enableForegroundService.collectAsStateWithLifecycle()
     val enableWakeLock by viewModel.enableWakeLock.collectAsStateWithLifecycle()
 
@@ -319,13 +317,9 @@ fun MainDashboardScreen(
                     NavigationTab.SETTINGS -> {
                         SettingsScreen(
                             currentTheme = currentTheme,
-                            brightnessMode = brightnessMode,
-                            useDynamicColor = useDynamicColor,
                             enableForegroundService = enableForegroundService,
                             enableWakeLock = enableWakeLock,
                             onSelectTheme = viewModel::setAppTheme,
-                            onSelectBrightnessMode = viewModel::setBrightnessMode,
-                            onToggleDynamicColor = viewModel::setUseDynamicColor,
                             onToggleForegroundService = viewModel::setEnableForegroundService,
                             onToggleWakeLock = viewModel::setEnableWakeLock,
                             onNavigateBack = { viewModel.selectTab(NavigationTab.OVERVIEW) }

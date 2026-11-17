@@ -35,14 +35,8 @@ class MainActivity : ComponentActivity() {
 
         setContent {
             val currentTheme by mainViewModel.currentTheme.collectAsStateWithLifecycle()
-            val brightnessMode by mainViewModel.brightnessMode.collectAsStateWithLifecycle()
-            val useDynamicColor by mainViewModel.useDynamicColor.collectAsStateWithLifecycle()
 
-            VideoCutterTheme(
-                appTheme = currentTheme,
-                brightnessMode = brightnessMode,
-                useDynamicColor = useDynamicColor
-            ) {
+            VideoCutterTheme(appTheme = currentTheme) {
                 MainDashboardScreen(
                     viewModel = mainViewModel,
                     modifier = Modifier.fillMaxSize()

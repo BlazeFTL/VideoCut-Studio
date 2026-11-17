@@ -60,6 +60,9 @@ import androidx.compose.ui.unit.sp
 import com.example.ui.MediaSortType
 import com.example.ui.MediaViewMode
 import com.example.ui.NavigationTab
+import com.example.ui.theme.SurfaceBorderLight
+import com.example.ui.theme.TextPrimaryDark
+import com.example.ui.theme.TextSecondaryMuted
 import com.example.util.VideoProcessor
 
 @Composable
@@ -133,12 +136,12 @@ fun MediaSelectorScreen(
                     text = "Media Selector",
                     fontWeight = FontWeight.Bold,
                     fontSize = 22.sp,
-                    color = MaterialTheme.colorScheme.onBackground
+                    color = TextPrimaryDark
                 )
                 Text(
                     text = "${videos.size} Videos found on device",
                     fontSize = 12.sp,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                    color = TextSecondaryMuted
                 )
             }
 
@@ -159,7 +162,7 @@ fun MediaSelectorScreen(
                     Icon(
                         imageVector = if (viewMode == MediaViewMode.FILES) Icons.Default.Folder else Icons.Default.ViewList,
                         contentDescription = "Toggle View Mode",
-                        tint = MaterialTheme.colorScheme.onPrimaryContainer,
+                        tint = MaterialTheme.colorScheme.primary,
                         modifier = Modifier.size(20.dp)
                     )
                 }
@@ -179,7 +182,7 @@ fun MediaSelectorScreen(
                         Icon(
                             imageVector = Icons.Default.Sort,
                             contentDescription = "Sort Options",
-                            tint = MaterialTheme.colorScheme.onPrimaryContainer,
+                            tint = MaterialTheme.colorScheme.primary,
                             modifier = Modifier.size(20.dp)
                         )
                     }
@@ -212,14 +215,14 @@ fun MediaSelectorScreen(
                 Text(
                     "Search videos by title...",
                     fontSize = 13.sp,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                    color = TextSecondaryMuted
                 )
             },
             leadingIcon = {
                 Icon(
                     Icons.Default.Search,
                     contentDescription = "Search videos",
-                    tint = MaterialTheme.colorScheme.onSurfaceVariant
+                    tint = TextSecondaryMuted
                 )
             },
             modifier = Modifier
@@ -243,7 +246,7 @@ fun MediaSelectorScreen(
                 Icon(
                     Icons.Default.Folder,
                     contentDescription = null,
-                    tint = MaterialTheme.colorScheme.onPrimaryContainer,
+                    tint = MaterialTheme.colorScheme.primary,
                     modifier = Modifier.size(16.dp)
                 )
                 Spacer(modifier = Modifier.width(6.dp))
@@ -251,7 +254,7 @@ fun MediaSelectorScreen(
                     "Folder: $selectedFolderFilter  ✕ Clear Filter",
                     fontSize = 12.sp,
                     fontWeight = FontWeight.Bold,
-                    color = MaterialTheme.colorScheme.onPrimaryContainer
+                    color = MaterialTheme.colorScheme.primary
                 )
             }
         }
@@ -274,8 +277,8 @@ fun MediaSelectorScreen(
                                 selectedFolderFilter = folder.name
                                 onSetViewMode(MediaViewMode.FILES)
                             },
-                        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceContainerLow),
-                        border = BorderStroke(1.dp, MaterialTheme.colorScheme.outlineVariant),
+                        colors = CardDefaults.cardColors(containerColor = Color.White),
+                        border = BorderStroke(1.dp, SurfaceBorderLight),
                         shape = RoundedCornerShape(16.dp)
                     ) {
                         Column(
@@ -292,7 +295,7 @@ fun MediaSelectorScreen(
                                 Icon(
                                     imageVector = Icons.Default.Folder,
                                     contentDescription = null,
-                                    tint = MaterialTheme.colorScheme.onPrimaryContainer,
+                                    tint = MaterialTheme.colorScheme.primary,
                                     modifier = Modifier.size(24.dp)
                                 )
                             }
@@ -301,14 +304,14 @@ fun MediaSelectorScreen(
                                 text = folder.name,
                                 fontWeight = FontWeight.Bold,
                                 fontSize = 14.sp,
-                                color = MaterialTheme.colorScheme.onSurface,
+                                color = TextPrimaryDark,
                                 maxLines = 1
                             )
 
                             Text(
                                 text = "${folder.videoCount} Videos • ${VideoProcessor.formatFileSize(folder.totalSizeBytes)}",
                                 fontSize = 11.sp,
-                                color = MaterialTheme.colorScheme.onSurfaceVariant
+                                color = TextSecondaryMuted
                             )
                         }
                     }
@@ -323,7 +326,7 @@ fun MediaSelectorScreen(
                         .weight(1f),
                     contentAlignment = Alignment.Center
                 ) {
-                    Text("No videos found", color = MaterialTheme.colorScheme.onSurfaceVariant, fontSize = 14.sp)
+                    Text("No videos found", color = TextSecondaryMuted, fontSize = 14.sp)
                 }
             } else {
                 LazyColumn(
@@ -393,8 +396,8 @@ private fun DeviceVideoRowItem(
         modifier = Modifier
             .fillMaxWidth()
             .clickable(onClick = onPlay),
-        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceContainerLow),
-        border = BorderStroke(1.dp, MaterialTheme.colorScheme.outlineVariant),
+        colors = CardDefaults.cardColors(containerColor = Color.White),
+        border = BorderStroke(1.dp, SurfaceBorderLight),
         shape = RoundedCornerShape(14.dp)
     ) {
         Row(
@@ -414,7 +417,7 @@ private fun DeviceVideoRowItem(
                 Icon(
                     imageVector = Icons.Outlined.Movie,
                     contentDescription = null,
-                    tint = MaterialTheme.colorScheme.onPrimaryContainer,
+                    tint = MaterialTheme.colorScheme.primary,
                     modifier = Modifier.size(26.dp)
                 )
 
@@ -442,7 +445,7 @@ private fun DeviceVideoRowItem(
                     text = item.title,
                     fontWeight = FontWeight.Bold,
                     fontSize = 13.sp,
-                    color = MaterialTheme.colorScheme.onSurface,
+                    color = TextPrimaryDark,
                     maxLines = 1
                 )
 
@@ -451,7 +454,7 @@ private fun DeviceVideoRowItem(
                 Text(
                     text = "${VideoProcessor.formatDuration(item.durationMs)} • ${item.width}x${item.height}",
                     fontSize = 11.sp,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                    color = TextSecondaryMuted
                 )
 
                 Spacer(modifier = Modifier.height(2.dp))
@@ -459,7 +462,7 @@ private fun DeviceVideoRowItem(
                 Text(
                     text = "Size: ${VideoProcessor.formatFileSize(item.sizeBytes)} • Folder: ${item.folderName}",
                     fontSize = 10.sp,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                    color = TextSecondaryMuted
                 )
             }
 
