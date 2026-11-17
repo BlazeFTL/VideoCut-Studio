@@ -3,6 +3,23 @@ on:
   push:
     branches:
       - main
+  workflow_dispatch:
+    inputs:
+      release:
+        description: Create GitHub release
+        type: boolean
+        default: false
+      tag:
+        description: Release tag (empty = v<run number>)
+        type: string
+        default: ""
+      prerelease:
+        description: Mark as pre-release
+        type: boolean
+        default: false
+
+permissions:
+  contents: write
 
 jobs:
   build:
@@ -76,6 +93,8 @@ jobs:
           fi
 
       - name: Rename APKs by ABI
+        env:
+          REPO_NAME: ${{ github.event.repository.name }}
         run: |
           mkdir -p output
           shopt -s nullglob
@@ -91,8 +110,8 @@ jobs:
             else
               abi="universal"
             fi
-            echo "Copying $apk to output/${{ github.event.repository.name }}-${abi}.apk"
-            cp "$apk" "output/${{ github.event.repository.name }}-${abi}.apk"
+            echo "Copying $apk to output/${REPO_NAME}-${abi}.apk"
+            cp "$apk" "output/${REPO_NAME}-${abi}.apk"
           done
 
       - name: Upload armeabi-v7a
@@ -134,3 +153,23 @@ jobs:
           path: output/${{ github.event.repository.name }}-universal.apk
           archive: false
           if-no-files-found: ignore
+
+      - name: Create GitHub Release
+        if: github.event_name == 'workflow_dispatch' && inputs.release
+        env:
+          GH_TOKEN: ${{ github.token }}
+          INPUT_TAG: ${{ inputs.tag }}
+          PRERELEASE: ${{ inputs.prerelease }}
+        run: |
+          TAG="${INPUT_TAG:-v${{ github.run_number }}}"
+          FLAGS=()
+          if [ "$PRERELEASE" = "true" ]; then FLAGS+=(--prerelease); fi
+          if gh release view "$TAG" >/dev/null 2>&1; then
+            gh release upload "$TAG" output/*.apk --clobber
+          else
+            gh release create "$TAG" output/*.apk \
+              --target "${{ github.sha }}" \
+              --title "$TAG" \
+              --generate-notes \
+              "${FLAGS[@]}"
+          fi
